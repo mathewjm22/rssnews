@@ -66,6 +66,13 @@ function getImageUrl(item: Element, content: string): string {
   return imageMatch?.[1] ?? '';
 }
 
+export function toPlainText(value: string): string {
+  if (!value) return '';
+
+  const document = new DOMParser().parseFromString(value, 'text/html');
+  return document.body.textContent?.trim() ?? '';
+}
+
 export function parseFeedXml(xml: string): ParsedFeedItem[] {
   const document = new DOMParser().parseFromString(xml, 'text/xml');
   if (document.querySelector('parsererror')) {
@@ -77,7 +84,7 @@ export function parseFeedXml(xml: string): ParsedFeedItem[] {
       getFirstText(item, ['content:encoded', 'content', 'description', 'summary']) || '';
     const contentSnippet =
       getFirstText(item, ['contentSnippet', 'description', 'summary']) ||
-      content.replace(/<[^>]*>?/gm, '').substring(0, 200);
+      toPlainText(content).substring(0, 200);
     const link = getLink(item);
 
     return {

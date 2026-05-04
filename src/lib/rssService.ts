@@ -1,5 +1,42 @@
 import { Article, FeedSource } from '../types';
-import { parseFeedXml } from './xmlFeedParser';
+import { parseFeedXml, toPlainText } from './xmlFeedParser';
+
+interface FeedItem {
+  guid?: string;
+  title?: string;
+  link?: string;
+  pubDate?: string;
+  isoDate?: string;
+  contentEncoded?: string;
+  content?: string;
+  description?: string;
+  contentSnippet?: string;
+  creator?: string;
+  author?: string;
+  thumbnail?: string;
+  enclosure?: {
+    url?: string;
+    type?: string;
+  };
+  mediaThumbnail?: {
+    $?: {
+      url?: string;
+    };
+  };
+  mediaContent?:
+    | {
+        $?: {
+          url?: string;
+          type?: string;
+        };
+      }
+    | Array<{
+        $?: {
+          url?: string;
+          type?: string;
+        };
+      }>;
+}
 
 export async function fetchRSS(source: FeedSource): Promise<Article[]> {
   try {
@@ -26,9 +63,9 @@ export async function fetchRSS(source: FeedSource): Promise<Article[]> {
     
     if (!feed || !feed.items) return [];
 
-    return feed.items.map((item: any) => {
+    return (feed.items as FeedItem[]).map(item => {
       const content = item.contentEncoded || item.content || item.description || '';
-      const snippet = item.contentSnippet || content.replace(/<[^>]*>?/gm, '').substring(0, 200) || '';
+      const snippet = item.contentSnippet || toPlainText(content).substring(0, 200) || '';
 
       let thumbnail = item.thumbnail || '';
 
@@ -53,7 +90,7 @@ export async function fetchRSS(source: FeedSource): Promise<Article[]> {
       }
 
       return {
-        id: item.guid || item.link || Math.random().toString(36).slice(2, 11),
+        id: item.guid || item.link || `${source.id}:${item.title || content.substring(0, 40)}`,
         title: item.title || 'Untitled',
         link: item.link || '',
         pubDate: item.pubDate || item.isoDate || new Date().toISOString(),
