@@ -1,12 +1,40 @@
+import Parser from 'rss-parser';
 import { Article, FeedSource } from '../types';
+
+const parser = new Parser({
+  customFields: {
+    item: [
+      ['media:content', 'mediaContent'],
+      ['media:thumbnail', 'mediaThumbnail'],
+      ['content:encoded', 'contentEncoded'],
+      ['enclosure', 'enclosure'],
+      ['source', 'source'],
+    ],
+  },
+});
 
 export async function fetchRSS(source: FeedSource): Promise<Article[]> {
   try {
-    const response = await fetch(`/api/rss?url=${encodeURIComponent(source.url)}`);
+    let feed;
     
-    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-    
-    const feed = await response.json();
+    // Attempt to use local API first (works in Dev and Full-stack hosting)
+    try {
+      const response = await fetch(`/api/rss?url=${encodeURIComponent(source.url)}`);
+      if (response.ok) {
+        feed = await response.json();
+      }
+    } catch (e) {
+      console.log("Local API not found, falling back to CORS proxy for static hosting.");
+    }
+
+    // Fallback: If local API failed or we are on static hosting (like GitHub Pages)
+    if (!feed) {
+      const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(source.url)}`;
+      const response = await fetch(proxyUrl);
+      if (!response.ok) throw new Error(`Proxy error! status: ${response.status}`);
+      const data = await response.json();
+      feed = await parser.parseString(data.contents);
+    }
     
     if (!feed || !feed.items) return [];
 
