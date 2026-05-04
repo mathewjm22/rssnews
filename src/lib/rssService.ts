@@ -1,5 +1,11 @@
 import { Article, FeedSource } from '../types';
-import { parseFeedXml, SNIPPET_MAX_LENGTH, toPlainText } from './xmlFeedParser';
+import {
+  extractImageUrlFromContent,
+  FALLBACK_ID_CONTENT_LENGTH,
+  parseFeedXml,
+  SNIPPET_MAX_LENGTH,
+  toPlainText,
+} from './xmlFeedParser';
 
 interface FeedItem {
   guid?: string;
@@ -37,8 +43,6 @@ interface FeedItem {
         };
       }>;
 }
-
-const FALLBACK_ID_CONTENT_LENGTH = 40;
 
 export async function fetchRSS(source: FeedSource): Promise<Article[]> {
   try {
@@ -87,8 +91,7 @@ export async function fetchRSS(source: FeedSource): Promise<Article[]> {
       }
 
       if (!thumbnail) {
-        const imgMatch = content.match(/<img[^>]+src="([^">]+)"/i);
-        if (imgMatch) thumbnail = imgMatch[1];
+        thumbnail = extractImageUrlFromContent(content);
       }
 
       return {

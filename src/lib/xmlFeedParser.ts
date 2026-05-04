@@ -10,7 +10,13 @@ export interface ParsedFeedItem {
   source: string;
 }
 
+export const FALLBACK_ID_CONTENT_LENGTH = 40;
 export const SNIPPET_MAX_LENGTH = 200;
+
+export function extractImageUrlFromContent(content: string): string {
+  const imageMatch = content.match(/<img[^>]+src="([^">]+)"/i);
+  return imageMatch?.[1] ?? '';
+}
 
 function getElements(parent: Element | Document, tagName: string): Element[] {
   const exactMatches = Array.from(parent.getElementsByTagName(tagName));
@@ -64,8 +70,7 @@ function getImageUrl(item: Element, content: string): string {
     }
   }
 
-  const imageMatch = content.match(/<img[^>]+src="([^">]+)"/i);
-  return imageMatch?.[1] ?? '';
+  return extractImageUrlFromContent(content);
 }
 
 export function toPlainText(value: string): string {
