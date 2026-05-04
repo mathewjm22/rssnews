@@ -1,3 +1,7 @@
+import Parser from 'rss-parser';
+
+const parser = new Parser();
+
 export interface RelatedArticle {
   title: string;
   source: string;
@@ -7,17 +11,33 @@ export interface RelatedArticle {
 
 export async function findRelatedCoverage(articleTitle: string): Promise<RelatedArticle[]> {
   try {
-    // We've switched to a free Search API in the backend that doesn't 
-    // require an API key for news searching.
-    const response = await fetch(`/api/search-news?q=${encodeURIComponent(articleTitle)}`);
-    
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+    // Attempt local API first
+    try {
+      const response = await fetch(`/api/search-news?q=${encodeURIComponent(articleTitle)}`);
+      if (response.ok) {
+        return await response.json();
+      }
+    } catch (e) {
+      console.log("Local search API not found, falling back to client-side CORS search.");
     }
+
+    // Fallback for static hosting (GitHub Pages)
+    // Use Google News RSS Search via AllOrigins proxy
+    const searchUrl = `https://news.google.com/rss/search?q=${encodeURIComponent(articleTitle)}+when:7d&hl=en-US&gl=US&ceid=US:en`;
+    const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(searchUrl)}`;
     
-    const results = await response.json();
-    return results;
+    const response = await fetch(proxyUrl);
+    if (!response.ok) throw new Error(`Proxy error! status: ${response.status}`);
+    
+    const data = await response.json();
+    const feed = await parser.parseString(data.contents);
+    
+    return (feed.items || []).slice(0, 5).map(item => ({
+      title: item.title || '',
+      source: (item as any).source || 'News Source',
+      url: item.link || '',
+      snippet: item.contentSnippet || item.content || ''
+    }));
   } catch (error) {
     console.error("Error finding related coverage:", error);
     return [];
