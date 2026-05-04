@@ -11,6 +11,7 @@ export interface ParsedFeedItem {
 }
 
 export const FALLBACK_ID_CONTENT_LENGTH = 40;
+export const FALLBACK_PUB_DATE = new Date(0).toISOString();
 export const SNIPPET_MAX_LENGTH = 200;
 
 export function extractImageUrlFromContent(content: string): string {
@@ -98,7 +99,7 @@ export function parseFeedXml(xml: string): ParsedFeedItem[] {
       guid: getFirstText(item, ['guid', 'id']) || link,
       title: getFirstText(item, ['title']) || 'Untitled',
       link,
-      pubDate: getFirstText(item, ['pubDate', 'published', 'updated']) || new Date().toISOString(),
+      pubDate: getFirstText(item, ['pubDate', 'published', 'updated']) || FALLBACK_PUB_DATE,
       content,
       contentSnippet,
       author: getFirstText(item, ['creator', 'dc:creator', 'author', 'name']),

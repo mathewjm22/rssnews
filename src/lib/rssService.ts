@@ -2,6 +2,7 @@ import { Article, FeedSource } from '../types';
 import {
   extractImageUrlFromContent,
   FALLBACK_ID_CONTENT_LENGTH,
+  FALLBACK_PUB_DATE,
   parseFeedXml,
   SNIPPET_MAX_LENGTH,
   toPlainText,
@@ -98,10 +99,10 @@ export async function fetchRSS(source: FeedSource): Promise<Article[]> {
         id:
           item.guid ||
           item.link ||
-          `${source.id}:${item.title || content.substring(0, FALLBACK_ID_CONTENT_LENGTH)}`,
+          `${source.id}:${item.pubDate || item.isoDate || FALLBACK_PUB_DATE}:${item.title || content.substring(0, FALLBACK_ID_CONTENT_LENGTH)}`,
         title: item.title || 'Untitled',
         link: item.link || '',
-        pubDate: item.pubDate || item.isoDate || new Date().toISOString(),
+        pubDate: item.pubDate || item.isoDate || FALLBACK_PUB_DATE,
         content,
         contentSnippet: snippet,
         author: item.creator || item.author || '',
