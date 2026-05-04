@@ -1,6 +1,4 @@
-import Parser from 'rss-parser';
-
-const parser = new Parser();
+import { parseFeedXml } from '../lib/xmlFeedParser';
 
 export interface RelatedArticle {
   title: string;
@@ -30,11 +28,11 @@ export async function findRelatedCoverage(articleTitle: string): Promise<Related
     if (!response.ok) throw new Error(`Proxy error! status: ${response.status}`);
     
     const data = await response.json();
-    const feed = await parser.parseString(data.contents);
+    const items = parseFeedXml(data.contents);
     
-    return (feed.items || []).slice(0, 5).map(item => ({
+    return items.slice(0, 5).map(item => ({
       title: item.title || '',
-      source: (item as any).source || 'News Source',
+      source: item.source || 'News Source',
       url: item.link || '',
       snippet: item.contentSnippet || item.content || ''
     }));
