@@ -14,6 +14,16 @@ export const FALLBACK_ID_CONTENT_LENGTH = 40;
 export const FALLBACK_PUB_DATE = new Date(0).toISOString();
 export const SNIPPET_MAX_LENGTH = 200;
 
+export function createStableFeedId(value: string): string {
+  let hash = 5381;
+
+  for (let index = 0; index < value.length; index += 1) {
+    hash = (hash * 33) ^ value.charCodeAt(index);
+  }
+
+  return `generated:${(hash >>> 0).toString(36)}`;
+}
+
 export function extractImageUrlFromContent(content: string): string {
   const imageMatch = content.match(/<img[^>]+src="([^">]+)"/i);
   return imageMatch?.[1] ?? '';
@@ -88,18 +98,24 @@ export function parseFeedXml(xml: string): ParsedFeedItem[] {
   }
 
   return Array.from(document.querySelectorAll('item, entry')).map(item => {
+    const title = getFirstText(item, ['title']) || 'Untitled';
     const content =
       getFirstText(item, ['content:encoded', 'content', 'description', 'summary']) || '';
     const contentSnippet =
       getFirstText(item, ['contentSnippet', 'description', 'summary']) ||
       toPlainText(content).substring(0, SNIPPET_MAX_LENGTH);
     const link = getLink(item);
+    const pubDate = getFirstText(item, ['pubDate', 'published', 'updated']) || FALLBACK_PUB_DATE;
+    const guid =
+      getFirstText(item, ['guid', 'id']) ||
+      link ||
+      createStableFeedId(`${title}|${link}|${pubDate}|${contentSnippet}`);
 
     return {
-      guid: getFirstText(item, ['guid', 'id']) || link,
-      title: getFirstText(item, ['title']) || 'Untitled',
+      guid,
+      title,
       link,
-      pubDate: getFirstText(item, ['pubDate', 'published', 'updated']) || FALLBACK_PUB_DATE,
+      pubDate,
       content,
       contentSnippet,
       author: getFirstText(item, ['creator', 'dc:creator', 'author', 'name']),

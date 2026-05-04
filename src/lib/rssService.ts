@@ -1,5 +1,6 @@
 import { Article, FeedSource } from '../types';
 import {
+  createStableFeedId,
   extractImageUrlFromContent,
   FALLBACK_ID_CONTENT_LENGTH,
   FALLBACK_PUB_DATE,
@@ -99,7 +100,9 @@ export async function fetchRSS(source: FeedSource): Promise<Article[]> {
         id:
           item.guid ||
           item.link ||
-          `${source.id}:${item.pubDate || item.isoDate || FALLBACK_PUB_DATE}:${item.title || content.substring(0, FALLBACK_ID_CONTENT_LENGTH)}`,
+          createStableFeedId(
+            `${source.id}|${item.pubDate || item.isoDate || FALLBACK_PUB_DATE}|${item.title || ''}|${content.substring(0, FALLBACK_ID_CONTENT_LENGTH)}`,
+          ),
         title: item.title || 'Untitled',
         link: item.link || '',
         pubDate: item.pubDate || item.isoDate || FALLBACK_PUB_DATE,
