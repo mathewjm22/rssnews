@@ -1,5 +1,5 @@
 import { Article, FeedSource } from '../types';
-import { parseFeedXml, toPlainText } from './xmlFeedParser';
+import { parseFeedXml, SNIPPET_MAX_LENGTH, toPlainText } from './xmlFeedParser';
 
 interface FeedItem {
   guid?: string;
@@ -38,6 +38,8 @@ interface FeedItem {
       }>;
 }
 
+const FALLBACK_ID_CONTENT_LENGTH = 40;
+
 export async function fetchRSS(source: FeedSource): Promise<Article[]> {
   try {
     let feed;
@@ -65,7 +67,7 @@ export async function fetchRSS(source: FeedSource): Promise<Article[]> {
 
     return (feed.items as FeedItem[]).map(item => {
       const content = item.contentEncoded || item.content || item.description || '';
-      const snippet = item.contentSnippet || toPlainText(content).substring(0, 200) || '';
+      const snippet = item.contentSnippet || toPlainText(content).substring(0, SNIPPET_MAX_LENGTH) || '';
 
       let thumbnail = item.thumbnail || '';
 
@@ -90,7 +92,10 @@ export async function fetchRSS(source: FeedSource): Promise<Article[]> {
       }
 
       return {
-        id: item.guid || item.link || `${source.id}:${item.title || content.substring(0, 40)}`,
+        id:
+          item.guid ||
+          item.link ||
+          `${source.id}:${item.title || content.substring(0, FALLBACK_ID_CONTENT_LENGTH)}`,
         title: item.title || 'Untitled',
         link: item.link || '',
         pubDate: item.pubDate || item.isoDate || new Date().toISOString(),

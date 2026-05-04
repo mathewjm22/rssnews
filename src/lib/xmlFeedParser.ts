@@ -10,6 +10,8 @@ export interface ParsedFeedItem {
   source: string;
 }
 
+export const SNIPPET_MAX_LENGTH = 200;
+
 function getElements(parent: Element | Document, tagName: string): Element[] {
   const exactMatches = Array.from(parent.getElementsByTagName(tagName));
   if (exactMatches.length > 0) return exactMatches;
@@ -84,7 +86,7 @@ export function parseFeedXml(xml: string): ParsedFeedItem[] {
       getFirstText(item, ['content:encoded', 'content', 'description', 'summary']) || '';
     const contentSnippet =
       getFirstText(item, ['contentSnippet', 'description', 'summary']) ||
-      toPlainText(content).substring(0, 200);
+      toPlainText(content).substring(0, SNIPPET_MAX_LENGTH);
     const link = getLink(item);
 
     return {
