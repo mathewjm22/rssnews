@@ -12,7 +12,8 @@ import {
   ExternalLink,
   Ghost,
   LayoutList,
-  LayoutGrid
+  LayoutGrid,
+  ArrowLeft
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { Article, FeedSource, DEFAULT_FEEDS, FEED_CATEGORIES } from './types';
@@ -28,7 +29,7 @@ const formatShortTime = (dateStr: string) => {
     str = str.replace('less than a minute', 'now');
     str = str.replace('a minute', '1m').replace('an hour', '1h').replace('a day', '1d').replace('a month', '1mo').replace('a year', '1y');
     str = str.replace(/ minutes?/, 'm').replace(/ hours?/, 'h').replace(/ days?/, 'd').replace(/ months?/, 'mo').replace(/ years?/, 'y');
-    return str.replace(/\s+/g, ''); // Removes inner spaces like "3 h" -> "3h"
+    return str.replace(/\s+/g, ''); 
   } catch (e) {
     return '';
   }
@@ -37,13 +38,13 @@ const formatShortTime = (dateStr: string) => {
 export default function App() {
   const [articles, setArticles] = useState<Article[]>([]);
   const [loading, setLoading] = useState(true);
-  const[selectedArticle, setSelectedArticle] = useState<Article | null>(null);
+  const [selectedArticle, setSelectedArticle] = useState<Article | null>(null);
   const [relatedArticles, setRelatedArticles] = useState<RelatedArticle[]>([]);
   const [loadingRelated, setLoadingRelated] = useState(false);
-  const [activeTab, setActiveTab] = useState<string>('Major News');
+  const[activeTab, setActiveTab] = useState<string>('Major News');
   const[activeSourceId, setActiveSourceId] = useState<string | null>(null);
-  const[expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set(['Major News']));
-  const[searchQuery, setSearchQuery] = useState('');
+  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set(['Major News']));
+  const [searchQuery, setSearchQuery] = useState('');
   
   // App Settings State
   const [excludedKeywords, setExcludedKeywords] = useState<string[]>(() => {
@@ -54,16 +55,16 @@ export default function App() {
     const saved = localStorage.getItem('read_article_ids');
     return new Set(saved ? JSON.parse(saved) : []);
   });
-  const[viewMode, setViewMode] = useState<'list' | 'grid'>(() => {
+  const [viewMode, setViewMode] = useState<'list' | 'grid'>(() => {
     const saved = localStorage.getItem('view_mode');
     return (saved as 'list' | 'grid') || 'list';
   });
 
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const[newKeyword, setNewKeyword] = useState('');
-  const [refreshKey, setRefreshKey] = useState(0);
-  const[lastUpdated, setLastUpdated] = useState<Date>(new Date());
+  const[isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const[isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [newKeyword, setNewKeyword] = useState('');
+  const[refreshKey, setRefreshKey] = useState(0);
+  const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
   const isManualRefresh = React.useRef(false);
 
   // Persist state
@@ -102,7 +103,7 @@ export default function App() {
       setLastUpdated(new Date());
     };
     loadFeeds();
-  }, [activeTab, activeSourceId, refreshKey]);
+  },[activeTab, activeSourceId, refreshKey]);
 
   const toggleCategory = (cat: string) => {
     setExpandedCategories(prev => {
@@ -123,20 +124,17 @@ export default function App() {
   // Filtering Logic
   const filteredArticles = useMemo(() => {
     return articles.filter(article => {
-      // Keyword exclusion
       if (excludedKeywords.some(keyword => 
         article.title.toLowerCase().includes(keyword.toLowerCase()) || 
         article.contentSnippet.toLowerCase().includes(keyword.toLowerCase())
       )) return false;
 
-      // Search query
       if (searchQuery && !article.title.toLowerCase().includes(searchQuery.toLowerCase())) {
         return false;
       }
-
       return true;
     });
-  },[articles, excludedKeywords, searchQuery]);
+  }, [articles, excludedKeywords, searchQuery]);
 
   const markAsRead = (id: string) => {
     setReadIds(prev => new Set([...Array.from(prev), id]));
@@ -156,7 +154,7 @@ export default function App() {
 
   const handleArticleSelect = (article: Article) => {
     setSelectedArticle(article);
-    setRelatedArticles([]); // Reset related coverage when changing articles
+    setRelatedArticles([]);
     markAsRead(article.id);
   };
 
@@ -332,170 +330,169 @@ export default function App() {
         </motion.aside>
 
         {/* Middle Column: News Feed */}
-        {/* If grid mode is active, flex-1 allows this to take up the full right side since we hide the reading pane! */}
-        <section className={cn(
-          "bg-white border-r border-slate-200 flex flex-col shrink-0 transition-all duration-300",
-          viewMode === 'grid' ? "flex-1 w-full" : "w-full sm:w-80 lg:w-96"
-        )}>
-          <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-white shrink-0">
-            <span className="text-sm font-bold tracking-tight truncate mr-2">
-              {activeSourceId 
-                ? DEFAULT_FEEDS.find(f => f.id === activeSourceId)?.name 
-                : activeTab}
-            </span>
-            <div className="flex items-center gap-3 shrink-0">
-              {/* Toggle controls for View Mode */}
-              <div className="flex bg-slate-100 rounded-lg p-0.5">
-                <button
-                  onClick={() => setViewMode('list')}
-                  className={cn(
-                    "p-1.5 rounded-md transition-colors",
-                    viewMode === 'list' ? "bg-white shadow-sm text-indigo-600" : "text-slate-400 hover:text-slate-600"
-                  )}
-                  title="List View"
+        {/* Render only if we are in List View, OR we are in Grid view and NO article is selected */}
+        {(viewMode === 'list' || (viewMode === 'grid' && !selectedArticle)) && (
+          <section className={cn(
+            "bg-white border-r border-slate-200 flex flex-col shrink-0 transition-all duration-300",
+            viewMode === 'grid' ? "flex-1 w-full" : "w-full sm:w-80 lg:w-96"
+          )}>
+            <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-white shrink-0">
+              <span className="text-sm font-bold tracking-tight truncate mr-2">
+                {activeSourceId 
+                  ? DEFAULT_FEEDS.find(f => f.id === activeSourceId)?.name 
+                  : activeTab}
+              </span>
+              <div className="flex items-center gap-3 shrink-0">
+                {/* Toggle controls for View Mode */}
+                <div className="flex bg-slate-100 rounded-lg p-0.5">
+                  <button
+                    onClick={() => setViewMode('list')}
+                    className={cn(
+                      "p-1.5 rounded-md transition-colors",
+                      viewMode === 'list' ? "bg-white shadow-sm text-indigo-600" : "text-slate-400 hover:text-slate-600"
+                    )}
+                    title="List View"
+                  >
+                    <LayoutList size={14} />
+                  </button>
+                  <button
+                    onClick={() => setViewMode('grid')}
+                    className={cn(
+                      "p-1.5 rounded-md transition-colors",
+                      viewMode === 'grid' ? "bg-white shadow-sm text-indigo-600" : "text-slate-400 hover:text-slate-600"
+                    )}
+                    title="Card View"
+                  >
+                    <LayoutGrid size={14} />
+                  </button>
+                </div>
+                <button 
+                  onClick={() => {
+                    isManualRefresh.current = true;
+                    setRefreshKey(prev => prev + 1);
+                  }}
+                  className="text-indigo-600 text-[11px] font-bold uppercase tracking-wider hover:text-indigo-700 transition-colors"
                 >
-                  <LayoutList size={14} />
-                </button>
-                <button
-                  onClick={() => setViewMode('grid')}
-                  className={cn(
-                    "p-1.5 rounded-md transition-colors",
-                    viewMode === 'grid' ? "bg-white shadow-sm text-indigo-600" : "text-slate-400 hover:text-slate-600"
-                  )}
-                  title="Card View"
-                >
-                  <LayoutGrid size={14} />
+                  Refresh
                 </button>
               </div>
-              <button 
-                onClick={() => {
-                  isManualRefresh.current = true;
-                  setRefreshKey(prev => prev + 1);
-                }}
-                className="text-indigo-600 text-[11px] font-bold uppercase tracking-wider hover:text-indigo-700 transition-colors"
-              >
-                Refresh
-              </button>
             </div>
-          </div>
-          
-          {/* dynamic grid layout using CSS repeat auto-fill to gracefully expand blocks */}
-          <div className={cn(
-            "flex-1 overflow-y-auto scrollbar-hide bg-slate-50",
-            viewMode === 'grid' 
-              ? "grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-5 p-5 content-start" 
-              : "space-y-0.5"
-          )}>
-            {loading ? (
-               <div className="flex flex-col items-center justify-center h-full p-8 space-y-3 opacity-30 col-span-full">
-                  <div className="w-6 h-6 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin" />
-               </div>
-            ) : filteredArticles.length === 0 ? (
-               <div className="p-12 text-center space-y-3 col-span-full">
-                  <Filter className="mx-auto text-slate-200" size={40} strokeWidth={1} />
-                  <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">No articles found</p>
-               </div>
-            ) : (
-              filteredArticles.map((article) => (
-                viewMode === 'list' ? (
-                  // --- LIST VIEW ---
-                  <div
-                    key={article.id}
-                    onClick={() => handleArticleSelect(article)}
-                    className={cn(
-                      "bg-white p-4 transition-all duration-200 cursor-pointer border-l-4 group relative",
-                      selectedArticle?.id === article.id 
-                        ? "border-indigo-600 shadow-sm z-10" 
-                        : "border-transparent hover:bg-slate-50 hover:border-slate-100",
-                      readIds.has(article.id) && "opacity-50"
-                    )}
-                  >
-                    <div className="flex gap-4">
-                      {article.thumbnail && (
-                        <div className="w-16 h-16 sm:w-20 sm:h-20 bg-slate-100 rounded shrink-0 overflow-hidden border border-slate-100">
-                           <img src={article.thumbnail} alt="" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                        </div>
+            
+            {/* dynamic grid layout using CSS repeat auto-fill to gracefully expand blocks */}
+            <div className={cn(
+              "flex-1 overflow-y-auto scrollbar-hide bg-slate-50",
+              viewMode === 'grid' 
+                ? "grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-5 p-5 content-start" 
+                : "space-y-0.5"
+            )}>
+              {loading ? (
+                 <div className="flex flex-col items-center justify-center h-full p-8 space-y-3 opacity-30 col-span-full">
+                    <div className="w-6 h-6 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+                 </div>
+              ) : filteredArticles.length === 0 ? (
+                 <div className="p-12 text-center space-y-3 col-span-full">
+                    <Filter className="mx-auto text-slate-200" size={40} strokeWidth={1} />
+                    <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">No articles found</p>
+                 </div>
+              ) : (
+                filteredArticles.map((article) => (
+                  viewMode === 'list' ? (
+                    // --- LIST VIEW ---
+                    <div
+                      key={article.id}
+                      onClick={() => handleArticleSelect(article)}
+                      className={cn(
+                        "bg-white p-4 transition-all duration-200 cursor-pointer border-l-4 group relative",
+                        selectedArticle?.id === article.id 
+                          ? "border-indigo-600 shadow-sm z-10" 
+                          : "border-transparent hover:bg-slate-50 hover:border-slate-100",
+                        readIds.has(article.id) && "opacity-50"
                       )}
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1.5">
-                          {(() => {
-                            const source = DEFAULT_FEEDS.find(f => f.id === article.feedSourceId);
-                            if (!source) return null;
-                            const domain = new URL(source.url).hostname;
-                            return <img src={`https://www.google.com/s2/favicons?domain=${domain}&sz=32`} alt="" className="w-3 h-3 rounded-sm opacity-80" />;
-                          })()}
-                          <span className="text-[10px] font-bold text-indigo-600 uppercase tracking-wider">{article.feedSourceName}</span>
-                          <span className="text-slate-300 text-[10px]">•</span>
-                          <span className="text-[10px] font-bold text-slate-400 uppercase">{formatDistanceToNow(new Date(article.pubDate))} ago</span>
+                    >
+                      <div className="flex gap-4">
+                        {article.thumbnail && (
+                          <div className="w-16 h-16 sm:w-20 sm:h-20 bg-slate-100 rounded shrink-0 overflow-hidden border border-slate-100">
+                             <img src={article.thumbnail} alt="" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                          </div>
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1.5">
+                            {(() => {
+                              const source = DEFAULT_FEEDS.find(f => f.id === article.feedSourceId);
+                              if (!source) return null;
+                              const domain = new URL(source.url).hostname;
+                              return <img src={`https://www.google.com/s2/favicons?domain=${domain}&sz=32`} alt="" className="w-3 h-3 rounded-sm opacity-80" />;
+                            })()}
+                            <span className="text-[10px] font-bold text-indigo-600 uppercase tracking-wider">{article.feedSourceName}</span>
+                            <span className="text-slate-300 text-[10px]">•</span>
+                            <span className="text-[10px] font-bold text-slate-400 uppercase">{formatDistanceToNow(new Date(article.pubDate))} ago</span>
+                          </div>
+                          <h4 className={cn(
+                            "text-sm font-bold leading-snug line-clamp-2 transition-colors",
+                            selectedArticle?.id === article.id ? "text-indigo-900" : "text-slate-800"
+                          )}>
+                            {article.title}
+                          </h4>
+                          <p className="text-[11px] text-slate-500 mt-2 line-clamp-2 leading-relaxed italic">
+                            {article.contentSnippet}
+                          </p>
                         </div>
-                        <h4 className={cn(
-                          "text-sm font-bold leading-snug line-clamp-2 transition-colors",
-                          selectedArticle?.id === article.id ? "text-indigo-900" : "text-slate-800"
-                        )}>
-                          {article.title}
-                        </h4>
-                        <p className="text-[11px] text-slate-500 mt-2 line-clamp-2 leading-relaxed italic">
-                          {article.contentSnippet}
-                        </p>
                       </div>
                     </div>
-                  </div>
-                ) : (
-                  // --- GRID / CARD VIEW ---
-                  <div
-                    key={article.id}
-                    onClick={() => {
-                      handleArticleSelect(article);
-                      // Switch back to list view automatically when a user clicks a grid card so they can read it!
-                      setViewMode('list');
-                    }}
-                    className={cn(
-                      "bg-white rounded-xl overflow-hidden transition-all duration-200 cursor-pointer border group relative flex flex-col shadow-sm hover:shadow-md hover:border-indigo-300",
-                      readIds.has(article.id) && "opacity-60"
-                    )}
-                  >
-                    {/* Image Top */}
-                    <div className="w-full aspect-video bg-slate-100 relative overflow-hidden shrink-0">
-                      {article.thumbnail ? (
-                        <img src={article.thumbnail} alt="" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                      ) : (
-                        <div className="w-full h-full bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center group-hover:scale-105 transition-transform duration-500">
-                          <Newspaper className="text-slate-300 w-10 h-10" />
-                        </div>
+                  ) : (
+                    // --- GRID / CARD VIEW ---
+                    <div
+                      key={article.id}
+                      onClick={() => handleArticleSelect(article)}
+                      className={cn(
+                        "bg-white rounded-xl overflow-hidden transition-all duration-200 cursor-pointer border group relative flex flex-col shadow-sm hover:shadow-md hover:border-indigo-300",
+                        readIds.has(article.id) && "opacity-60"
                       )}
-                    </div>
-                    
-                    {/* Content Details Below */}
-                    <div className="p-4 flex flex-col flex-1 gap-2.5">
-                      <div className="flex justify-between items-center text-xs font-semibold">
-                        <div className="flex items-center gap-1.5 min-w-0">
-                          {(() => {
-                            const source = DEFAULT_FEEDS.find(f => f.id === article.feedSourceId);
-                            if (!source) return null;
-                            const domain = new URL(source.url).hostname;
-                            return <img src={`https://www.google.com/s2/favicons?domain=${domain}&sz=32`} alt="" className="w-4 h-4 rounded-sm shrink-0" />;
-                          })()}
-                          <span className="text-slate-700 truncate">{article.feedSourceName}</span>
-                        </div>
-                        <div className="flex items-center gap-1 shrink-0 text-slate-500">
-                          <span className="text-amber-500 text-[10px]">●</span>
-                          <span>{formatShortTime(article.pubDate)}</span>
-                        </div>
+                    >
+                      {/* Image Top */}
+                      <div className="w-full aspect-video bg-slate-100 relative overflow-hidden shrink-0">
+                        {article.thumbnail ? (
+                          <img src={article.thumbnail} alt="" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                        ) : (
+                          <div className="w-full h-full bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center group-hover:scale-105 transition-transform duration-500">
+                            <Newspaper className="text-slate-300 w-10 h-10" />
+                          </div>
+                        )}
                       </div>
                       
-                      <h4 className="text-[15px] font-bold leading-[1.3] text-slate-900 group-hover:text-indigo-600 transition-colors line-clamp-3">
-                        {article.title}
-                      </h4>
+                      {/* Content Details Below */}
+                      <div className="p-4 flex flex-col flex-1 gap-2.5">
+                        <div className="flex justify-between items-center text-xs font-semibold">
+                          <div className="flex items-center gap-1.5 min-w-0">
+                            {(() => {
+                              const source = DEFAULT_FEEDS.find(f => f.id === article.feedSourceId);
+                              if (!source) return null;
+                              const domain = new URL(source.url).hostname;
+                              return <img src={`https://www.google.com/s2/favicons?domain=${domain}&sz=32`} alt="" className="w-4 h-4 rounded-sm shrink-0" />;
+                            })()}
+                            <span className="text-slate-700 truncate">{article.feedSourceName}</span>
+                          </div>
+                          <div className="flex items-center gap-1 shrink-0 text-slate-500">
+                            <span className="text-amber-500 text-[10px]">●</span>
+                            <span>{formatShortTime(article.pubDate)}</span>
+                          </div>
+                        </div>
+                        
+                        <h4 className="text-[15px] font-bold leading-[1.3] text-slate-900 group-hover:text-indigo-600 transition-colors line-clamp-3">
+                          {article.title}
+                        </h4>
+                      </div>
                     </div>
-                  </div>
-                )
-              ))
-            )}
-          </div>
-        </section>
+                  )
+                ))
+              )}
+            </div>
+          </section>
+        )}
 
-        {/* Right Column: Article View (Only renders if we are in List mode!) */}
-        {viewMode === 'list' && (
+        {/* Right Column: Article View */}
+        {/* Render if we are in List View, OR if we are in Grid view AND an article IS selected */}
+        {(viewMode === 'list' || (viewMode === 'grid' && selectedArticle)) && (
           <article className="flex-1 bg-white overflow-hidden flex flex-col relative">
             <AnimatePresence mode="wait">
               {!selectedArticle ? (
@@ -516,9 +513,19 @@ export default function App() {
                   key={selectedArticle.id}
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="flex-1 overflow-y-auto scrollbar-hide"
+                  className="flex-1 overflow-y-auto scrollbar-hide relative"
                 >
                   <div className="p-8 lg:p-14 max-w-2xl mx-auto">
+                    
+                    {/* The beautiful inline BACK / CLOSE button */}
+                    <button 
+                      onClick={() => setSelectedArticle(null)}
+                      className="mb-8 flex items-center gap-2 text-sm font-bold text-slate-500 hover:text-indigo-600 transition-colors group"
+                    >
+                      <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" /> 
+                      {viewMode === 'grid' ? 'Back to Grid' : 'Close Article'}
+                    </button>
+
                     <div className="mb-10">
                       <div className="flex items-center gap-4 mb-6">
                         <span className="bg-indigo-600 text-white text-[10px] px-2.5 py-1 rounded font-bold uppercase tracking-widest shadow-sm">
