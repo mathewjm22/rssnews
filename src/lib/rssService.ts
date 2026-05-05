@@ -48,41 +48,19 @@ interface FeedItem {
 
 export async function fetchRSS(source: FeedSource): Promise<Article[]> {
   try {
-    let feed;
+    // Replace this URL with YOUR actual Cloudflare Worker URL
+    const WORKER_URL = 'https://chanfana-openapi-template.sweet-dream-0ed6.workers.dev/';
     
-    // Attempt to use local API first (works in Dev and Full-stack hosting)
-    try {
-      const response = await fetch(`/api/rss?url=${encodeURIComponent(source.url)}`);
-      if (response.ok) {
-        feed = await response.json();
-      }
-    } catch (e) {
-      console.log("Local API not found, falling back to CORS proxy for static hosting.");
-    }
-
-    // Fallback: If local API failed or we are on static hosting (like GitHub Pages)
-// Fallback: If local API failed or we are on static hosting (like GitHub Pages)
-    if (!feed) {
-      try {
-        // Primary proxy: corsproxy.io (faster, reliable, returns raw text)
-        const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(source.url)}`;
-        const response = await fetch(proxyUrl);
-        if (!response.ok) throw new Error('Primary proxy failed');
-        const xmlText = await response.text();
-        feed = { items: parseFeedXml(xmlText) };
-      } catch (err) {
-        console.warn(`Primary proxy failed for ${source.name}, trying backup...`);
-        // Backup proxy: CodeTabs (very good for RSS feeds)
-        const backupUrl = `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(source.url)}`;
-        const response = await fetch(backupUrl);
-        if (!response.ok) throw new Error(`Backup proxy failed too! status: ${response.status}`);
-        const xmlText = await response.text();
-        feed = { items: parseFeedXml(xmlText) };
-      }
-    }
+    const proxyUrl = `${WORKER_URL}/?url=${encodeURIComponent(source.url)}`;
+    const response = await fetch(proxyUrl);
+    
+    if (!response.ok) throw new Error(`Worker error! status: ${response.status}`);
+    
+    const xmlText = await response.text();
+    const feed = { items: parseFeedXml(xmlText) };
     
     if (!feed || !feed.items) return [];
-
+    
     return (feed.items as FeedItem[]).map(item => {
       const content = item.contentEncoded || item.content || item.description || '';
       const snippet = item.contentSnippet || toPlainText(content).substring(0, SNIPPET_MAX_LENGTH) || '';
