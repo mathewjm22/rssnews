@@ -13,7 +13,9 @@ import {
   X,
   Share2,
   ExternalLink,
-  Ghost
+  Ghost,
+  LayoutList,
+  LayoutGrid
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { Article, FeedSource, DEFAULT_FEEDS, FEED_CATEGORIES } from './types';
@@ -24,13 +26,15 @@ import { findRelatedCoverage, RelatedArticle } from './services/geminiService';
 export default function App() {
   const [articles, setArticles] = useState<Article[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedArticle, setSelectedArticle] = useState<Article | null>(null);
+  const[selectedArticle, setSelectedArticle] = useState<Article | null>(null);
   const [relatedArticles, setRelatedArticles] = useState<RelatedArticle[]>([]);
   const [loadingRelated, setLoadingRelated] = useState(false);
   const [activeTab, setActiveTab] = useState<string>('Major News');
-  const [activeSourceId, setActiveSourceId] = useState<string | null>(null);
-  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set(['Major News']));
+  const[activeSourceId, setActiveSourceId] = useState<string | null>(null);
+  const[expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set(['Major News']));
   const [searchQuery, setSearchQuery] = useState('');
+  
+  // App Settings State
   const [excludedKeywords, setExcludedKeywords] = useState<string[]>(() => {
     const saved = localStorage.getItem('excluded_keywords');
     return saved ? JSON.parse(saved) : [];
@@ -39,14 +43,18 @@ export default function App() {
     const saved = localStorage.getItem('read_article_ids');
     return new Set(saved ? JSON.parse(saved) : []);
   });
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [viewMode, setViewMode] = useState<'list' | 'grid'>(() => {
+    const saved = localStorage.getItem('view_mode');
+    return (saved as 'list' | 'grid') || 'list';
+  });
+
+  const[isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [newKeyword, setNewKeyword] = useState('');
-  const [refreshKey, setRefreshKey] = useState(0);
+  const[refreshKey, setRefreshKey] = useState(0);
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
-  const isManualRefresh = React.useRef(false); // Add this line!
+  const isManualRefresh = React.useRef(false);
 
-  
   // Persist state
   useEffect(() => {
     localStorage.setItem('excluded_keywords', JSON.stringify(excludedKeywords));
@@ -56,11 +64,15 @@ export default function App() {
     localStorage.setItem('read_article_ids', JSON.stringify(Array.from(readIds)));
   }, [readIds]);
 
+  useEffect(() => {
+    localStorage.setItem('view_mode', viewMode);
+  }, [viewMode]);
+
   // Load articles
   useEffect(() => {
     const loadFeeds = async () => {
       setLoading(true);
-      let sourcesToFetch: FeedSource[] = [];
+      let sourcesToFetch: FeedSource[] =[];
       
       if (activeSourceId) {
         const source = DEFAULT_FEEDS.find(f => f.id === activeSourceId);
@@ -69,7 +81,6 @@ export default function App() {
         sourcesToFetch = DEFAULT_FEEDS.filter(f => f.category === activeTab);
       }
 
-// Pass the manual refresh flag, then instantly reset it
       const results = await Promise.all(sourcesToFetch.map(source => fetchRSS(source, isManualRefresh.current)));
       isManualRefresh.current = false;
       const flattened = results.flat().sort((a, b) => 
@@ -310,77 +321,169 @@ export default function App() {
         </motion.aside>
 
         {/* Middle Column: News Feed */}
-        <section className="w-full sm:w-80 lg:w-96 bg-white border-r border-slate-200 flex flex-col shrink-0">
+        {/* Update width dynamically based on the active viewMode */}
+        <section className={cn(
+          "bg-white border-r border-slate-200 flex flex-col shrink-0 transition-all duration-300",
+          viewMode === 'grid' ? "w-full sm:w-96 lg:w-[500px] xl:w-[600px]" : "w-full sm:w-80 lg:w-96"
+        )}>
           <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-white shrink-0">
-            <span className="text-sm font-bold tracking-tight">
+            <span className="text-sm font-bold tracking-tight truncate mr-2">
               {activeSourceId 
                 ? DEFAULT_FEEDS.find(f => f.id === activeSourceId)?.name 
                 : activeTab}
             </span>
-<button 
-              onClick={() => {
-                isManualRefresh.current = true;
-                setRefreshKey(prev => prev + 1);
-              }}
-              className="text-indigo-600 text-[11px] font-bold uppercase tracking-wider hover:text-indigo-700 transition-colors"
-            >
-              Refresh
-            </button>
+            <div className="flex items-center gap-3 shrink-0">
+              {/* Toggle controls for View Mode */}
+              <div className="flex bg-slate-100 rounded-lg p-0.5">
+                <button
+                  onClick={() => setViewMode('list')}
+                  className={cn(
+                    "p-1.5 rounded-md transition-colors",
+                    viewMode === 'list' ? "bg-white shadow-sm text-indigo-600" : "text-slate-400 hover:text-slate-600"
+                  )}
+                  title="List View"
+                >
+                  <LayoutList size={14} />
+                </button>
+                <button
+                  onClick={() => setViewMode('grid')}
+                  className={cn(
+                    "p-1.5 rounded-md transition-colors",
+                    viewMode === 'grid' ? "bg-white shadow-sm text-indigo-600" : "text-slate-400 hover:text-slate-600"
+                  )}
+                  title="Card View"
+                >
+                  <LayoutGrid size={14} />
+                </button>
+              </div>
+              <button 
+                onClick={() => {
+                  isManualRefresh.current = true;
+                  setRefreshKey(prev => prev + 1);
+                }}
+                className="text-indigo-600 text-[11px] font-bold uppercase tracking-wider hover:text-indigo-700 transition-colors"
+              >
+                Refresh
+              </button>
+            </div>
           </div>
           
-          <div className="flex-1 overflow-y-auto scrollbar-hide bg-slate-50 space-y-0.5">
+          <div className={cn(
+            "flex-1 overflow-y-auto scrollbar-hide bg-slate-50",
+            viewMode === 'grid' ? "grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 content-start" : "space-y-0.5"
+          )}>
             {loading ? (
-               <div className="flex flex-col items-center justify-center h-full p-8 space-y-3 opacity-30">
+               <div className="flex flex-col items-center justify-center h-full p-8 space-y-3 opacity-30 col-span-full">
                   <div className="w-6 h-6 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin" />
                </div>
             ) : filteredArticles.length === 0 ? (
-               <div className="p-12 text-center space-y-3">
+               <div className="p-12 text-center space-y-3 col-span-full">
                   <Filter className="mx-auto text-slate-200" size={40} strokeWidth={1} />
                   <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">No articles found</p>
                </div>
             ) : (
               filteredArticles.map((article) => (
-                <div
-                  key={article.id}
-                  onClick={() => handleArticleSelect(article)}
-                  className={cn(
-                    "bg-white p-4 transition-all duration-200 cursor-pointer border-l-4 group relative",
-                    selectedArticle?.id === article.id 
-                      ? "border-indigo-600 shadow-sm z-10" 
-                      : "border-transparent hover:bg-slate-50 hover:border-slate-100",
-                    readIds.has(article.id) && "opacity-50"
-                  )}
-                >
-                  <div className="flex gap-4">
-                    {article.thumbnail && (
-                      <div className="w-16 h-16 sm:w-20 sm:h-20 bg-slate-100 rounded shrink-0 overflow-hidden border border-slate-100">
-                         <img src={article.thumbnail} alt="" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                viewMode === 'list' ? (
+                  // --- LIST VIEW ---
+                  <div
+                    key={article.id}
+                    onClick={() => handleArticleSelect(article)}
+                    className={cn(
+                      "bg-white p-4 transition-all duration-200 cursor-pointer border-l-4 group relative",
+                      selectedArticle?.id === article.id 
+                        ? "border-indigo-600 shadow-sm z-10" 
+                        : "border-transparent hover:bg-slate-50 hover:border-slate-100",
+                      readIds.has(article.id) && "opacity-50"
+                    )}
+                  >
+                    <div className="flex gap-4">
+                      {article.thumbnail && (
+                        <div className="w-16 h-16 sm:w-20 sm:h-20 bg-slate-100 rounded shrink-0 overflow-hidden border border-slate-100">
+                           <img src={article.thumbnail} alt="" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                        </div>
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1.5">
+                          {(() => {
+                            const source = DEFAULT_FEEDS.find(f => f.id === article.feedSourceId);
+                            if (!source) return null;
+                            const domain = new URL(source.url).hostname;
+                            return <img src={`https://www.google.com/s2/favicons?domain=${domain}&sz=32`} alt="" className="w-3 h-3 rounded-sm opacity-80" />;
+                          })()}
+                          <span className="text-[10px] font-bold text-indigo-600 uppercase tracking-wider">{article.feedSourceName}</span>
+                          <span className="text-slate-300 text-[10px]">•</span>
+                          <span className="text-[10px] font-bold text-slate-400 uppercase">{formatDistanceToNow(new Date(article.pubDate))} ago</span>
+                        </div>
+                        <h4 className={cn(
+                          "text-sm font-bold leading-snug line-clamp-2 transition-colors",
+                          selectedArticle?.id === article.id ? "text-indigo-900" : "text-slate-800"
+                        )}>
+                          {article.title}
+                        </h4>
+                        <p className="text-[11px] text-slate-500 mt-2 line-clamp-2 leading-relaxed italic">
+                          {article.contentSnippet}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  // --- GRID / CARD VIEW ---
+                  <div
+                    key={article.id}
+                    onClick={() => handleArticleSelect(article)}
+                    className={cn(
+                      "bg-white rounded-xl overflow-hidden transition-all duration-200 cursor-pointer border group relative flex flex-col shadow-sm hover:shadow-md",
+                      selectedArticle?.id === article.id 
+                        ? "border-indigo-600 ring-2 ring-indigo-600/20 z-10" 
+                        : "border-slate-200 hover:border-indigo-300",
+                      readIds.has(article.id) && "opacity-60"
+                    )}
+                  >
+                    {article.thumbnail ? (
+                      <div className="w-full aspect-[16/10] bg-slate-100 relative overflow-hidden shrink-0">
+                        <img src={article.thumbnail} alt="" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                        <div className="absolute top-3 left-3 flex items-center gap-1.5 bg-black/60 backdrop-blur-md px-2 py-1 rounded text-white z-10">
+                          {(() => {
+                            const source = DEFAULT_FEEDS.find(f => f.id === article.feedSourceId);
+                            if (!source) return null;
+                            const domain = new URL(source.url).hostname;
+                            return <img src={`https://www.google.com/s2/favicons?domain=${domain}&sz=32`} alt="" className="w-3 h-3 rounded-sm" />;
+                          })()}
+                          <span className="text-[9px] font-bold uppercase tracking-wider">{article.feedSourceName}</span>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="w-full aspect-[16/10] bg-gradient-to-br from-slate-100 to-slate-200 relative overflow-hidden shrink-0 flex items-center justify-center">
+                        <Newspaper className="text-slate-300 w-10 h-10" />
+                        <div className="absolute top-3 left-3 flex items-center gap-1.5 bg-black/60 backdrop-blur-md px-2 py-1 rounded text-white z-10">
+                          {(() => {
+                            const source = DEFAULT_FEEDS.find(f => f.id === article.feedSourceId);
+                            if (!source) return null;
+                            const domain = new URL(source.url).hostname;
+                            return <img src={`https://www.google.com/s2/favicons?domain=${domain}&sz=32`} alt="" className="w-3 h-3 rounded-sm" />;
+                          })()}
+                          <span className="text-[9px] font-bold uppercase tracking-wider">{article.feedSourceName}</span>
+                        </div>
                       </div>
                     )}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1.5">
-                        {(() => {
-                          const source = DEFAULT_FEEDS.find(f => f.id === article.feedSourceId);
-                          if (!source) return null;
-                          const domain = new URL(source.url).hostname;
-                          return <img src={`https://www.google.com/s2/favicons?domain=${domain}&sz=32`} alt="" className="w-3 h-3 rounded-sm opacity-80" />;
-                        })()}
-                        <span className="text-[10px] font-bold text-indigo-600 uppercase tracking-wider">{article.feedSourceName}</span>
-                        <span className="text-slate-300 text-[10px]">•</span>
-                        <span className="text-[10px] font-bold text-slate-400 uppercase">{formatDistanceToNow(new Date(article.pubDate))} ago</span>
+                    <div className="p-4 flex flex-col flex-1">
+                      <div className="flex justify-between items-center mb-2">
+                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">
+                          {formatDistanceToNow(new Date(article.pubDate))} ago
+                        </span>
                       </div>
                       <h4 className={cn(
-                        "text-sm font-bold leading-snug line-clamp-2 transition-colors",
-                        selectedArticle?.id === article.id ? "text-indigo-900" : "text-slate-800"
+                        "text-sm font-bold leading-snug line-clamp-3 mb-2 transition-colors",
+                        selectedArticle?.id === article.id ? "text-indigo-700" : "text-slate-800 group-hover:text-indigo-600"
                       )}>
                         {article.title}
                       </h4>
-                      <p className="text-[11px] text-slate-500 mt-2 line-clamp-2 leading-relaxed italic">
+                      <p className="text-[11px] text-slate-500 mt-auto line-clamp-2 leading-relaxed">
                         {article.contentSnippet}
                       </p>
                     </div>
                   </div>
-                </div>
+                )
               ))
             )}
           </div>
