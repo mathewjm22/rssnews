@@ -61,12 +61,24 @@ export async function fetchRSS(source: FeedSource): Promise<Article[]> {
     }
 
     // Fallback: If local API failed or we are on static hosting (like GitHub Pages)
+// Fallback: If local API failed or we are on static hosting (like GitHub Pages)
     if (!feed) {
-      const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(source.url)}`;
-      const response = await fetch(proxyUrl);
-      if (!response.ok) throw new Error(`Proxy error! status: ${response.status}`);
-      const data = await response.json();
-      feed = { items: parseFeedXml(data.contents) };
+      try {
+        // Primary proxy: corsproxy.io (faster, reliable, returns raw text)
+        const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(source.url)}`;
+        const response = await fetch(proxyUrl);
+        if (!response.ok) throw new Error('Primary proxy failed');
+        const xmlText = await response.text();
+        feed = { items: parseFeedXml(xmlText) };
+      } catch (err) {
+        console.warn(`Primary proxy failed for ${source.name}, trying backup...`);
+        // Backup proxy: CodeTabs (very good for RSS feeds)
+        const backupUrl = `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(source.url)}`;
+        const response = await fetch(backupUrl);
+        if (!response.ok) throw new Error(`Backup proxy failed too! status: ${response.status}`);
+        const xmlText = await response.text();
+        feed = { items: parseFeedXml(xmlText) };
+      }
     }
     
     if (!feed || !feed.items) return [];
