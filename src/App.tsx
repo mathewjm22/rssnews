@@ -5,11 +5,8 @@ import {
   Search, 
   Settings, 
   ChevronRight, 
-  Clock, 
   Filter, 
-  CheckCheck, 
   Trash2, 
-  Menu,
   X,
   Share2,
   ExternalLink,
@@ -23,6 +20,20 @@ import { fetchRSS } from './lib/rssService';
 import { cn } from './lib/utils';
 import { findRelatedCoverage, RelatedArticle } from './services/geminiService';
 
+// Helper to format "3 hours ago" down to simply "3h" or "15m" to match the card style
+const formatShortTime = (dateStr: string) => {
+  try {
+    let str = formatDistanceToNow(new Date(dateStr));
+    str = str.replace('about ', '').replace('almost ', '').replace('over ', '');
+    str = str.replace('less than a minute', 'now');
+    str = str.replace('a minute', '1m').replace('an hour', '1h').replace('a day', '1d').replace('a month', '1mo').replace('a year', '1y');
+    str = str.replace(/ minutes?/, 'm').replace(/ hours?/, 'h').replace(/ days?/, 'd').replace(/ months?/, 'mo').replace(/ years?/, 'y');
+    return str.replace(/\s+/g, ''); // Removes inner spaces like "3 h" -> "3h"
+  } catch (e) {
+    return '';
+  }
+};
+
 export default function App() {
   const [articles, setArticles] = useState<Article[]>([]);
   const [loading, setLoading] = useState(true);
@@ -32,7 +43,7 @@ export default function App() {
   const [activeTab, setActiveTab] = useState<string>('Major News');
   const[activeSourceId, setActiveSourceId] = useState<string | null>(null);
   const[expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set(['Major News']));
-  const [searchQuery, setSearchQuery] = useState('');
+  const[searchQuery, setSearchQuery] = useState('');
   
   // App Settings State
   const [excludedKeywords, setExcludedKeywords] = useState<string[]>(() => {
@@ -43,16 +54,16 @@ export default function App() {
     const saved = localStorage.getItem('read_article_ids');
     return new Set(saved ? JSON.parse(saved) : []);
   });
-  const [viewMode, setViewMode] = useState<'list' | 'grid'>(() => {
+  const[viewMode, setViewMode] = useState<'list' | 'grid'>(() => {
     const saved = localStorage.getItem('view_mode');
     return (saved as 'list' | 'grid') || 'list';
   });
 
-  const[isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const [newKeyword, setNewKeyword] = useState('');
-  const[refreshKey, setRefreshKey] = useState(0);
-  const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
+  const[newKeyword, setNewKeyword] = useState('');
+  const [refreshKey, setRefreshKey] = useState(0);
+  const[lastUpdated, setLastUpdated] = useState<Date>(new Date());
   const isManualRefresh = React.useRef(false);
 
   // Persist state
@@ -125,7 +136,7 @@ export default function App() {
 
       return true;
     });
-  }, [articles, excludedKeywords, searchQuery]);
+  },[articles, excludedKeywords, searchQuery]);
 
   const markAsRead = (id: string) => {
     setReadIds(prev => new Set([...Array.from(prev), id]));
@@ -321,10 +332,10 @@ export default function App() {
         </motion.aside>
 
         {/* Middle Column: News Feed */}
-        {/* Update width dynamically based on the active viewMode */}
+        {/* If grid mode is active, flex-1 allows this to take up the full right side since we hide the reading pane! */}
         <section className={cn(
           "bg-white border-r border-slate-200 flex flex-col shrink-0 transition-all duration-300",
-          viewMode === 'grid' ? "w-full sm:w-96 lg:w-[500px] xl:w-[600px]" : "w-full sm:w-80 lg:w-96"
+          viewMode === 'grid' ? "flex-1 w-full" : "w-full sm:w-80 lg:w-96"
         )}>
           <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-white shrink-0">
             <span className="text-sm font-bold tracking-tight truncate mr-2">
@@ -368,9 +379,12 @@ export default function App() {
             </div>
           </div>
           
+          {/* dynamic grid layout using CSS repeat auto-fill to gracefully expand blocks */}
           <div className={cn(
             "flex-1 overflow-y-auto scrollbar-hide bg-slate-50",
-            viewMode === 'grid' ? "grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 content-start" : "space-y-0.5"
+            viewMode === 'grid' 
+              ? "grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-5 p-5 content-start" 
+              : "space-y-0.5"
           )}>
             {loading ? (
                <div className="flex flex-col items-center justify-center h-full p-8 space-y-3 opacity-30 col-span-full">
@@ -430,57 +444,48 @@ export default function App() {
                   // --- GRID / CARD VIEW ---
                   <div
                     key={article.id}
-                    onClick={() => handleArticleSelect(article)}
+                    onClick={() => {
+                      handleArticleSelect(article);
+                      // Switch back to list view automatically when a user clicks a grid card so they can read it!
+                      setViewMode('list');
+                    }}
                     className={cn(
-                      "bg-white rounded-xl overflow-hidden transition-all duration-200 cursor-pointer border group relative flex flex-col shadow-sm hover:shadow-md",
-                      selectedArticle?.id === article.id 
-                        ? "border-indigo-600 ring-2 ring-indigo-600/20 z-10" 
-                        : "border-slate-200 hover:border-indigo-300",
+                      "bg-white rounded-xl overflow-hidden transition-all duration-200 cursor-pointer border group relative flex flex-col shadow-sm hover:shadow-md hover:border-indigo-300",
                       readIds.has(article.id) && "opacity-60"
                     )}
                   >
-                    {article.thumbnail ? (
-                      <div className="w-full aspect-[16/10] bg-slate-100 relative overflow-hidden shrink-0">
+                    {/* Image Top */}
+                    <div className="w-full aspect-video bg-slate-100 relative overflow-hidden shrink-0">
+                      {article.thumbnail ? (
                         <img src={article.thumbnail} alt="" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                        <div className="absolute top-3 left-3 flex items-center gap-1.5 bg-black/60 backdrop-blur-md px-2 py-1 rounded text-white z-10">
+                      ) : (
+                        <div className="w-full h-full bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center group-hover:scale-105 transition-transform duration-500">
+                          <Newspaper className="text-slate-300 w-10 h-10" />
+                        </div>
+                      )}
+                    </div>
+                    
+                    {/* Content Details Below */}
+                    <div className="p-4 flex flex-col flex-1 gap-2.5">
+                      <div className="flex justify-between items-center text-xs font-semibold">
+                        <div className="flex items-center gap-1.5 min-w-0">
                           {(() => {
                             const source = DEFAULT_FEEDS.find(f => f.id === article.feedSourceId);
                             if (!source) return null;
                             const domain = new URL(source.url).hostname;
-                            return <img src={`https://www.google.com/s2/favicons?domain=${domain}&sz=32`} alt="" className="w-3 h-3 rounded-sm" />;
+                            return <img src={`https://www.google.com/s2/favicons?domain=${domain}&sz=32`} alt="" className="w-4 h-4 rounded-sm shrink-0" />;
                           })()}
-                          <span className="text-[9px] font-bold uppercase tracking-wider">{article.feedSourceName}</span>
+                          <span className="text-slate-700 truncate">{article.feedSourceName}</span>
+                        </div>
+                        <div className="flex items-center gap-1 shrink-0 text-slate-500">
+                          <span className="text-amber-500 text-[10px]">●</span>
+                          <span>{formatShortTime(article.pubDate)}</span>
                         </div>
                       </div>
-                    ) : (
-                      <div className="w-full aspect-[16/10] bg-gradient-to-br from-slate-100 to-slate-200 relative overflow-hidden shrink-0 flex items-center justify-center">
-                        <Newspaper className="text-slate-300 w-10 h-10" />
-                        <div className="absolute top-3 left-3 flex items-center gap-1.5 bg-black/60 backdrop-blur-md px-2 py-1 rounded text-white z-10">
-                          {(() => {
-                            const source = DEFAULT_FEEDS.find(f => f.id === article.feedSourceId);
-                            if (!source) return null;
-                            const domain = new URL(source.url).hostname;
-                            return <img src={`https://www.google.com/s2/favicons?domain=${domain}&sz=32`} alt="" className="w-3 h-3 rounded-sm" />;
-                          })()}
-                          <span className="text-[9px] font-bold uppercase tracking-wider">{article.feedSourceName}</span>
-                        </div>
-                      </div>
-                    )}
-                    <div className="p-4 flex flex-col flex-1">
-                      <div className="flex justify-between items-center mb-2">
-                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">
-                          {formatDistanceToNow(new Date(article.pubDate))} ago
-                        </span>
-                      </div>
-                      <h4 className={cn(
-                        "text-sm font-bold leading-snug line-clamp-3 mb-2 transition-colors",
-                        selectedArticle?.id === article.id ? "text-indigo-700" : "text-slate-800 group-hover:text-indigo-600"
-                      )}>
+                      
+                      <h4 className="text-[15px] font-bold leading-[1.3] text-slate-900 group-hover:text-indigo-600 transition-colors line-clamp-3">
                         {article.title}
                       </h4>
-                      <p className="text-[11px] text-slate-500 mt-auto line-clamp-2 leading-relaxed">
-                        {article.contentSnippet}
-                      </p>
                     </div>
                   </div>
                 )
@@ -489,172 +494,174 @@ export default function App() {
           </div>
         </section>
 
-        {/* Right Column: Article View */}
-        <article className="flex-1 bg-white overflow-hidden flex flex-col relative">
-          <AnimatePresence mode="wait">
-            {!selectedArticle ? (
-              <motion.div 
-                key="empty"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="flex-1 flex flex-col items-center justify-center p-12 text-center"
-              >
-                <div className="w-20 h-20 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-200 mb-6 font-serif text-5xl italic border border-slate-100 shadow-sm">
-                  A
-                </div>
-                <h3 className="text-xl font-bold text-slate-900 mb-2">Welcome to your workspace</h3>
-                <p className="text-sm text-slate-400 max-w-xs leading-relaxed">Select a headline from the side to begin review in professional focus mode.</p>
-              </motion.div>
-            ) : (
-              <motion.div 
-                key={selectedArticle.id}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="flex-1 overflow-y-auto scrollbar-hide"
-              >
-                <div className="p-8 lg:p-14 max-w-2xl mx-auto">
-                  <div className="mb-10">
-                    <div className="flex items-center gap-4 mb-6">
-                      <span className="bg-indigo-600 text-white text-[10px] px-2.5 py-1 rounded font-bold uppercase tracking-widest shadow-sm">
-                        {selectedArticle.feedSourceName}
-                      </span>
-                      <span className="text-slate-400 text-xs font-medium">
-                        {new Date(selectedArticle.pubDate).toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' })}
-                      </span>
-                    </div>
-                    
-                    <h1 className="text-3xl lg:text-5xl font-bold text-slate-900 leading-[1.1] mb-8 font-serif italic border-l-8 border-indigo-600 pl-6">
-                      {selectedArticle.title}
-                    </h1>
-
-                    <div className="flex items-center gap-4 border-y border-slate-100 py-5">
-                      {(() => {
-                        const source = DEFAULT_FEEDS.find(f => f.id === selectedArticle.feedSourceId);
-                        const domain = source ? new URL(source.url).hostname : '';
-                        return (
-                          <div className="w-10 h-10 rounded-full bg-slate-50 border border-slate-200 flex items-center justify-center overflow-hidden">
-                            {domain ? (
-                              <img src={`https://www.google.com/s2/favicons?domain=${domain}&sz=64`} alt="" className="w-6 h-6 object-contain" />
-                            ) : (
-                              <span className="font-bold text-slate-500 uppercase text-xs">{selectedArticle.feedSourceName.charAt(0)}</span>
-                            )}
-                          </div>
-                        );
-                      })()}
-                      <div>
-                        <p className="text-xs font-bold text-slate-900 uppercase tracking-tight">Source Authority</p>
-                        <p className="text-xs text-slate-400">Authenticated via {new URL(selectedArticle.link).hostname}</p>
-                      </div>
-                      <div className="ml-auto flex gap-3">
-                        <button className="p-2.5 hover:bg-indigo-50 rounded-full text-slate-400 hover:text-indigo-600 transition-all border border-transparent hover:border-indigo-100">
-                          <Share2 size={18} />
-                        </button>
-                        <button className="p-2.5 hover:bg-slate-50 rounded-full text-slate-400 hover:text-slate-900 transition-all border border-transparent hover:border-slate-200">
-                          <ExternalLink size={18} />
-                        </button>
-                      </div>
-                    </div>
+        {/* Right Column: Article View (Only renders if we are in List mode!) */}
+        {viewMode === 'list' && (
+          <article className="flex-1 bg-white overflow-hidden flex flex-col relative">
+            <AnimatePresence mode="wait">
+              {!selectedArticle ? (
+                <motion.div 
+                  key="empty"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="flex-1 flex flex-col items-center justify-center p-12 text-center"
+                >
+                  <div className="w-20 h-20 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-200 mb-6 font-serif text-5xl italic border border-slate-100 shadow-sm">
+                    A
                   </div>
-
-                  {selectedArticle.thumbnail && (
-                    <div className="w-full aspect-video rounded-3xl overflow-hidden mb-12 shadow-2xl shadow-indigo-100/50 border border-slate-100">
-                      <img 
-                        src={selectedArticle.thumbnail} 
-                        alt="" 
-                        className="w-full h-full object-cover"
-                        referrerPolicy="no-referrer"
-                      />
-                    </div>
-                  )}
-
-                  <div className="article-content" dangerouslySetInnerHTML={{ __html: selectedArticle.content }} />
-
-                  {/* Related Coverage Section */}
-                  <div className="mt-16 pt-10 border-t border-slate-100">
-                    <div className="flex items-center justify-between mb-8">
-                      <div>
-                        <h3 className="text-xl font-bold text-slate-900 tracking-tight">Related Coverage</h3>
-                        <p className="text-sm text-slate-500 mt-1">Sourced via Global News Search</p>
+                  <h3 className="text-xl font-bold text-slate-900 mb-2">Welcome to your workspace</h3>
+                  <p className="text-sm text-slate-400 max-w-xs leading-relaxed">Select a headline from the side to begin review in professional focus mode.</p>
+                </motion.div>
+              ) : (
+                <motion.div 
+                  key={selectedArticle.id}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="flex-1 overflow-y-auto scrollbar-hide"
+                >
+                  <div className="p-8 lg:p-14 max-w-2xl mx-auto">
+                    <div className="mb-10">
+                      <div className="flex items-center gap-4 mb-6">
+                        <span className="bg-indigo-600 text-white text-[10px] px-2.5 py-1 rounded font-bold uppercase tracking-widest shadow-sm">
+                          {selectedArticle.feedSourceName}
+                        </span>
+                        <span className="text-slate-400 text-xs font-medium">
+                          {new Date(selectedArticle.pubDate).toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' })}
+                        </span>
                       </div>
-                      <button 
-                        onClick={handleFindRelated}
-                        disabled={loadingRelated}
-                        className={cn(
-                          "px-5 py-2.5 rounded-full text-sm font-bold transition-all duration-200 flex items-center gap-2",
-                          loadingRelated 
-                            ? "bg-slate-100 text-slate-400 cursor-not-allowed" 
-                            : "bg-indigo-600 text-white hover:bg-indigo-700 shadow-lg shadow-indigo-100 hover:shadow-indigo-200 active:scale-95"
-                        )}
-                      >
-                        {loadingRelated ? (
-                          <>
-                            <div className="w-3.5 h-3.5 border-2 border-slate-300 border-t-slate-500 rounded-full animate-spin" />
-                            Searching...
-                          </>
-                        ) : (
-                          <>
-                            <Search size={16} />
-                            Find related news
-                          </>
-                        )}
-                      </button>
-                    </div>
+                      
+                      <h1 className="text-3xl lg:text-5xl font-bold text-slate-900 leading-[1.1] mb-8 font-serif italic border-l-8 border-indigo-600 pl-6">
+                        {selectedArticle.title}
+                      </h1>
 
-                    {relatedArticles.length > 0 ? (
-                      <div className="grid grid-cols-1 gap-4">
-                        {relatedArticles.map((rel, idx) => (
-                          <motion.a
-                            key={idx}
-                            href={rel.url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: idx * 0.1 }}
-                            className="p-5 rounded-2xl bg-slate-50 hover:bg-white border border-transparent hover:border-slate-200 hover:shadow-lg hover:shadow-slate-100 group transition-all duration-300 block"
-                          >
-                            <div className="flex justify-between items-start mb-2">
-                              <span className="text-[10px] font-bold uppercase tracking-widest text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded">
-                                {rel.source}
-                              </span>
-                              <ExternalLink size={14} className="text-slate-300 group-hover:text-indigo-500 transition-colors" />
+                      <div className="flex items-center gap-4 border-y border-slate-100 py-5">
+                        {(() => {
+                          const source = DEFAULT_FEEDS.find(f => f.id === selectedArticle.feedSourceId);
+                          const domain = source ? new URL(source.url).hostname : '';
+                          return (
+                            <div className="w-10 h-10 rounded-full bg-slate-50 border border-slate-200 flex items-center justify-center overflow-hidden">
+                              {domain ? (
+                                <img src={`https://www.google.com/s2/favicons?domain=${domain}&sz=64`} alt="" className="w-6 h-6 object-contain" />
+                              ) : (
+                                <span className="font-bold text-slate-500 uppercase text-xs">{selectedArticle.feedSourceName.charAt(0)}</span>
+                              )}
                             </div>
-                            <h4 className="font-bold text-slate-900 group-hover:text-indigo-600 transition-colors line-clamp-2 leading-snug">
-                              {rel.title}
-                            </h4>
-                            <p className="text-sm text-slate-500 mt-2 line-clamp-2 leading-relaxed">
-                              {rel.snippet}
-                            </p>
-                          </motion.a>
-                        ))}
-                      </div>
-                    ) : !loadingRelated && (
-                      <div className="py-12 flex flex-col items-center justify-center text-center px-4 bg-slate-50/50 rounded-3xl border border-dashed border-slate-200">
-                        <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-sm border border-slate-100 mb-4 text-slate-400">
-                          <Search size={20} />
+                          );
+                        })()}
+                        <div>
+                          <p className="text-xs font-bold text-slate-900 uppercase tracking-tight">Source Authority</p>
+                          <p className="text-xs text-slate-400">Authenticated via {new URL(selectedArticle.link).hostname}</p>
                         </div>
-                        <p className="text-sm font-medium text-slate-600">Want to see how other sources are reporting this?</p>
-                        <p className="text-xs text-slate-400 mt-1">Compare coverage from around the world in one click.</p>
+                        <div className="ml-auto flex gap-3">
+                          <button className="p-2.5 hover:bg-indigo-50 rounded-full text-slate-400 hover:text-indigo-600 transition-all border border-transparent hover:border-indigo-100">
+                            <Share2 size={18} />
+                          </button>
+                          <button className="p-2.5 hover:bg-slate-50 rounded-full text-slate-400 hover:text-slate-900 transition-all border border-transparent hover:border-slate-200">
+                            <ExternalLink size={18} />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+
+                    {selectedArticle.thumbnail && (
+                      <div className="w-full aspect-video rounded-3xl overflow-hidden mb-12 shadow-2xl shadow-indigo-100/50 border border-slate-100">
+                        <img 
+                          src={selectedArticle.thumbnail} 
+                          alt="" 
+                          className="w-full h-full object-cover"
+                          referrerPolicy="no-referrer"
+                        />
                       </div>
                     )}
-                  </div>
 
-                  <div className="mt-16 pt-10 border-t border-slate-100 flex items-center justify-between">
-                     <a 
-                      href={selectedArticle.link} 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-2 text-indigo-600 font-bold text-sm bg-indigo-50 px-5 py-2.5 rounded-full hover:bg-indigo-100 transition-all"
-                    >
-                      Read full article on {selectedArticle.feedSourceName}
-                      <span className="text-xs">↗</span>
-                    </a>
+                    <div className="article-content" dangerouslySetInnerHTML={{ __html: selectedArticle.content }} />
+
+                    {/* Related Coverage Section */}
+                    <div className="mt-16 pt-10 border-t border-slate-100">
+                      <div className="flex items-center justify-between mb-8">
+                        <div>
+                          <h3 className="text-xl font-bold text-slate-900 tracking-tight">Related Coverage</h3>
+                          <p className="text-sm text-slate-500 mt-1">Sourced via Global News Search</p>
+                        </div>
+                        <button 
+                          onClick={handleFindRelated}
+                          disabled={loadingRelated}
+                          className={cn(
+                            "px-5 py-2.5 rounded-full text-sm font-bold transition-all duration-200 flex items-center gap-2",
+                            loadingRelated 
+                              ? "bg-slate-100 text-slate-400 cursor-not-allowed" 
+                              : "bg-indigo-600 text-white hover:bg-indigo-700 shadow-lg shadow-indigo-100 hover:shadow-indigo-200 active:scale-95"
+                          )}
+                        >
+                          {loadingRelated ? (
+                            <>
+                              <div className="w-3.5 h-3.5 border-2 border-slate-300 border-t-slate-500 rounded-full animate-spin" />
+                              Searching...
+                            </>
+                          ) : (
+                            <>
+                              <Search size={16} />
+                              Find related news
+                            </>
+                          )}
+                        </button>
+                      </div>
+
+                      {relatedArticles.length > 0 ? (
+                        <div className="grid grid-cols-1 gap-4">
+                          {relatedArticles.map((rel, idx) => (
+                            <motion.a
+                              key={idx}
+                              href={rel.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              initial={{ opacity: 0, y: 10 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              transition={{ delay: idx * 0.1 }}
+                              className="p-5 rounded-2xl bg-slate-50 hover:bg-white border border-transparent hover:border-slate-200 hover:shadow-lg hover:shadow-slate-100 group transition-all duration-300 block"
+                            >
+                              <div className="flex justify-between items-start mb-2">
+                                <span className="text-[10px] font-bold uppercase tracking-widest text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded">
+                                  {rel.source}
+                                </span>
+                                <ExternalLink size={14} className="text-slate-300 group-hover:text-indigo-500 transition-colors" />
+                              </div>
+                              <h4 className="font-bold text-slate-900 group-hover:text-indigo-600 transition-colors line-clamp-2 leading-snug">
+                                {rel.title}
+                              </h4>
+                              <p className="text-sm text-slate-500 mt-2 line-clamp-2 leading-relaxed">
+                                {rel.snippet}
+                              </p>
+                            </motion.a>
+                          ))}
+                        </div>
+                      ) : !loadingRelated && (
+                        <div className="py-12 flex flex-col items-center justify-center text-center px-4 bg-slate-50/50 rounded-3xl border border-dashed border-slate-200">
+                          <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-sm border border-slate-100 mb-4 text-slate-400">
+                            <Search size={20} />
+                          </div>
+                          <p className="text-sm font-medium text-slate-600">Want to see how other sources are reporting this?</p>
+                          <p className="text-xs text-slate-400 mt-1">Compare coverage from around the world in one click.</p>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="mt-16 pt-10 border-t border-slate-100 flex items-center justify-between">
+                       <a 
+                        href={selectedArticle.link} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-2 text-indigo-600 font-bold text-sm bg-indigo-50 px-5 py-2.5 rounded-full hover:bg-indigo-100 transition-all"
+                      >
+                        Read full article on {selectedArticle.feedSourceName}
+                        <span className="text-xs">↗</span>
+                      </a>
+                    </div>
                   </div>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </article>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </article>
+        )}
       </main>
 
       {/* Settings Modal */}
