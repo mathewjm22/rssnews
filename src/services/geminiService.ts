@@ -30,4 +30,6 @@ export async function findRelatedCoverage(articleTitle: string): Promise<Related
     }));
   } catch (error) {
     console.error("Error finding related coverage:", error);
-    return
+    return[];
+  }
+}
