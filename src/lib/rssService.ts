@@ -46,12 +46,19 @@ interface FeedItem {
       }>;
 }
 
-export async function fetchRSS(source: FeedSource): Promise<Article[]> {
+// Add the forceRefresh boolean parameter with a default of false
+export async function fetchRSS(source: FeedSource, forceRefresh: boolean = false): Promise<Article[]> {
   try {
     // Replace this URL with YOUR actual Cloudflare Worker URL
     const WORKER_URL = 'https://chanfana-openapi-template.sweet-dream-0ed6.workers.dev/';
+
+    let proxyUrl = `${WORKER_URL}/?url=${encodeURIComponent(source.url)}`;
     
-    const proxyUrl = `${WORKER_URL}/?url=${encodeURIComponent(source.url)}`;
+    // If the user clicked refresh, append the cache-busting signal
+    if (forceRefresh) {
+      proxyUrl += '&nocache=true';
+    }
+    
     const response = await fetch(proxyUrl);
     
     if (!response.ok) throw new Error(`Worker error! status: ${response.status}`);
