@@ -44,7 +44,9 @@ export default function App() {
   const [newKeyword, setNewKeyword] = useState('');
   const [refreshKey, setRefreshKey] = useState(0);
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
+  const isManualRefresh = React.useRef(false); // Add this line!
 
+  
   // Persist state
   useEffect(() => {
     localStorage.setItem('excluded_keywords', JSON.stringify(excludedKeywords));
@@ -67,7 +69,9 @@ export default function App() {
         sourcesToFetch = DEFAULT_FEEDS.filter(f => f.category === activeTab);
       }
 
-      const results = await Promise.all(sourcesToFetch.map(fetchRSS));
+// Pass the manual refresh flag, then instantly reset it
+      const results = await Promise.all(sourcesToFetch.map(source => fetchRSS(source, isManualRefresh.current)));
+      isManualRefresh.current = false;
       const flattened = results.flat().sort((a, b) => 
         new Date(b.pubDate).getTime() - new Date(a.pubDate).getTime()
       );
@@ -313,8 +317,11 @@ export default function App() {
                 ? DEFAULT_FEEDS.find(f => f.id === activeSourceId)?.name 
                 : activeTab}
             </span>
-            <button 
-              onClick={() => setRefreshKey(prev => prev + 1)}
+<button 
+              onClick={() => {
+                isManualRefresh.current = true;
+                setRefreshKey(prev => prev + 1);
+              }}
               className="text-indigo-600 text-[11px] font-bold uppercase tracking-wider hover:text-indigo-700 transition-colors"
             >
               Refresh
