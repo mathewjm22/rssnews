@@ -35,25 +35,34 @@ const formatShortTime = (dateStr: string) => {
   }
 };
 
+// Safe helper for line clamping that works universally 
+const getClampStyle = (lines: number): React.CSSProperties => ({
+  display: '-webkit-box',
+  WebkitLineClamp: lines,
+  WebkitBoxOrient: 'vertical',
+  overflow: 'hidden',
+  textOverflow: 'ellipsis'
+});
+
 export default function App() {
   const [articles, setArticles] = useState<Article[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedArticle, setSelectedArticle] = useState<Article | null>(null);
   const [relatedArticles, setRelatedArticles] = useState<RelatedArticle[]>([]);
-  const [loadingRelated, setLoadingRelated] = useState(false);
+  const[loadingRelated, setLoadingRelated] = useState(false);
   const[activeTab, setActiveTab] = useState<string>('Major News');
   const[activeSourceId, setActiveSourceId] = useState<string | null>(null);
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set(['Major News']));
-  const [searchQuery, setSearchQuery] = useState('');
+  const[searchQuery, setSearchQuery] = useState('');
   
   // App Settings State
-  const [excludedKeywords, setExcludedKeywords] = useState<string[]>(() => {
+  const[excludedKeywords, setExcludedKeywords] = useState<string[]>(() => {
     const saved = localStorage.getItem('excluded_keywords');
     return saved ? JSON.parse(saved) : [];
   });
-  const [readIds, setReadIds] = useState<Set<string>>(() => {
+  const[readIds, setReadIds] = useState<Set<string>>(() => {
     const saved = localStorage.getItem('read_article_ids');
-    return new Set(saved ? JSON.parse(saved) : []);
+    return new Set(saved ? JSON.parse(saved) :[]);
   });
   const [viewMode, setViewMode] = useState<'list' | 'grid'>(() => {
     const saved = localStorage.getItem('view_mode');
@@ -62,7 +71,7 @@ export default function App() {
 
   const[isSidebarOpen, setIsSidebarOpen] = useState(true);
   const[isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const [newKeyword, setNewKeyword] = useState('');
+  const[newKeyword, setNewKeyword] = useState('');
   const[refreshKey, setRefreshKey] = useState(0);
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
   const isManualRefresh = React.useRef(false);
@@ -88,7 +97,7 @@ export default function App() {
       
       if (activeSourceId) {
         const source = DEFAULT_FEEDS.find(f => f.id === activeSourceId);
-        if (source) sourcesToFetch = [source];
+        if (source) sourcesToFetch =[source];
       } else {
         sourcesToFetch = DEFAULT_FEEDS.filter(f => f.category === activeTab);
       }
@@ -378,7 +387,7 @@ export default function App() {
               </div>
             </div>
             
-            {/* dynamic grid layout using CSS repeat auto-fill to gracefully expand blocks */}
+            {/* Dynamic layout for List vs Grid */}
             <div className={cn(
               "flex-1 overflow-y-auto scrollbar-hide bg-slate-50",
               viewMode === 'grid' 
@@ -402,7 +411,7 @@ export default function App() {
                       key={article.id}
                       onClick={() => handleArticleSelect(article)}
                       className={cn(
-                        "bg-white p-4 transition-all duration-200 cursor-pointer border-l-4 group relative",
+                        "bg-white p-4 transition-all duration-200 cursor-pointer border-l-4 group relative min-h-[100px]",
                         selectedArticle?.id === article.id 
                           ? "border-indigo-600 shadow-sm z-10" 
                           : "border-transparent hover:bg-slate-50 hover:border-slate-100",
@@ -427,13 +436,19 @@ export default function App() {
                             <span className="text-slate-300 text-[10px]">•</span>
                             <span className="text-[10px] font-bold text-slate-400 uppercase">{formatDistanceToNow(new Date(article.pubDate))} ago</span>
                           </div>
-                          <h4 className={cn(
-                            "text-sm font-bold leading-snug line-clamp-2 transition-colors",
-                            selectedArticle?.id === article.id ? "text-indigo-900" : "text-slate-800"
-                          )}>
-                            {article.title}
+                          <h4 
+                            className={cn(
+                              "text-sm font-bold leading-snug transition-colors",
+                              selectedArticle?.id === article.id ? "text-indigo-900" : "text-slate-800"
+                            )}
+                            style={getClampStyle(2)}
+                          >
+                            {article.title || 'Untitled'}
                           </h4>
-                          <p className="text-[11px] text-slate-500 mt-2 line-clamp-2 leading-relaxed italic">
+                          <p 
+                            className="text-[11px] text-slate-500 mt-2 leading-relaxed italic"
+                            style={getClampStyle(2)}
+                          >
                             {article.contentSnippet}
                           </p>
                         </div>
@@ -445,12 +460,15 @@ export default function App() {
                       key={article.id}
                       onClick={() => handleArticleSelect(article)}
                       className={cn(
-                        "bg-white rounded-xl overflow-hidden transition-all duration-200 cursor-pointer border group relative flex flex-col shadow-sm hover:shadow-md hover:border-indigo-300",
+                        "bg-white rounded-xl overflow-hidden transition-all duration-200 cursor-pointer border group relative flex flex-col shadow-sm hover:shadow-md hover:border-indigo-300 min-h-[280px]",
                         readIds.has(article.id) && "opacity-60"
                       )}
                     >
-                      {/* Image Top */}
-                      <div className="w-full aspect-video bg-slate-100 relative overflow-hidden shrink-0">
+                      {/* Image Top (Using strict inline aspect ratio to ensure it never collapses) */}
+                      <div 
+                        className="w-full bg-slate-100 relative overflow-hidden shrink-0"
+                        style={{ aspectRatio: '16/9', minHeight: '150px' }}
+                      >
                         {article.thumbnail ? (
                           <img src={article.thumbnail} alt="" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                         ) : (
@@ -478,8 +496,12 @@ export default function App() {
                           </div>
                         </div>
                         
-                        <h4 className="text-[15px] font-bold leading-[1.3] text-slate-900 group-hover:text-indigo-600 transition-colors line-clamp-3">
-                          {article.title}
+                        {/* Title strictly clamped via inline styles to ensure compatibility */}
+                        <h4 
+                          className="text-[15px] font-bold leading-[1.3] text-slate-900 group-hover:text-indigo-600 transition-colors"
+                          style={getClampStyle(3)}
+                        >
+                          {article.title || 'Untitled'}
                         </h4>
                       </div>
                     </div>
