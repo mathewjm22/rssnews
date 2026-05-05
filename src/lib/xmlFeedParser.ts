@@ -104,20 +104,36 @@ export function toPlainText(value: string): string {
 }
 
 export function parseFeedXml(xml: string): ParsedFeedItem[] {
-  const document = new DOMParser().parseFromString(xml, 'text/xml');
+  // Strip out zero-width spaces or weird encoding characters that break the DOMParser
+  const cleanXml = xml.replace(/[\u200B-\u200D\uFEFF]/g, '').trim();
+  
+  const document = new DOMParser().parseFromString(cleanXml, 'text/xml');
   if (document.querySelector('parsererror')) {
-    throw new Error('Failed to parse feed XML');
+    console.error('Failed to parse feed XML:', document.querySelector('parsererror')?.textContent);
+    return[];
   }
 
-  return Array.from(document.querySelectorAll('item, entry')).map(item => {
-    const title = getFirstText(item, ['title']) || 'Untitled';
-    const content =
-      getFirstText(item, ['content:encoded', 'content', 'description', 'summary']) || '';
+  // Find all items, regardless of namespaces
+  const items = Array.from(document.querySelectorAll('item, entry, *|item, *|entry'));
+  
+  return items.map(item => {
+    const title = getFirstText(item, ['title', 'media:title']) || 'Untitled';
+    const content = getFirstText(item, ['content:encoded', 'content', 'description', 'summary']) || '';
     const contentSnippet =
       getFirstText(item, ['contentSnippet', 'description', 'summary']) ||
       toPlainText(content).substring(0, SNIPPET_MAX_LENGTH);
-    const link = getLink(item);
-    const pubDate = getFirstText(item, ['pubDate', 'published', 'updated']) || FALLBACK_PUB_DATE;
+    
+    // Newsmax sometimes hides the link in a guid with isPermaLink="true"
+    let link = getLink(item);
+    if (!link) {
+      const guidNode = item.querySelector('guid');
+      if (guidNode && guidNode.getAttribute('isPermaLink') === 'true') {
+         link = guidNode.textContent?.trim() || '';
+      }
+    }
+
+    const pubDate = getFirstText(item,['pubDate', 'published', 'updated', 'dc:date']) || FALLBACK_PUB_DATE;
+    
     const guid =
       getFirstText(item, ['guid', 'id']) ||
       link ||
@@ -130,9 +146,9 @@ export function parseFeedXml(xml: string): ParsedFeedItem[] {
       pubDate,
       content,
       contentSnippet,
-      author: getFirstText(item, ['creator', 'dc:creator', 'author', 'name']),
+      author: getFirstText(item,['creator', 'dc:creator', 'author', 'name']),
       thumbnail: getImageUrl(item, content),
-      source: getFirstText(item, ['source']),
+      source: getFirstText(item,['source']),
     };
-  });
+  }).filter(item => item.title !== 'Untitled' && item.link !== ''); // Ensure we don't return ghost items
 }
