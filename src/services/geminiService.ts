@@ -10,7 +10,7 @@ export interface RelatedArticle {
 export async function findRelatedCoverage(articleTitle: string): Promise<RelatedArticle[]> {
   try {
     // Replace this URL with YOUR actual Cloudflare Worker URL
-    const WORKER_URL = 'https://aura-news-proxy.<your-username>.workers.dev';
+    const WORKER_URL = 'https://chanfana-openapi-template.sweet-dream-0ed6.workers.dev/';
     
     const searchUrl = `https://news.google.com/rss/search?q=${encodeURIComponent(articleTitle)}+when:7d&hl=en-US&gl=US&ceid=US:en`;
     const proxyUrl = `${WORKER_URL}/?url=${encodeURIComponent(searchUrl)}`;
