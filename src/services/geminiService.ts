@@ -7,8 +7,18 @@ export interface RelatedArticle {
   snippet: string;
 }
 
-export async function findRelatedCoverage(articleTitle: string): Promise<RelatedArticle
+export async function findRelatedCoverage(articleTitle: string): Promise<RelatedArticle[]> {
+  try {
+    // Replace this URL with YOUR actual Cloudflare Worker URL
+    const WORKER_URL = 'https://aura-news-proxy.<your-username>.workers.dev';
     
+    const searchUrl = `https://news.google.com/rss/search?q=${encodeURIComponent(articleTitle)}+when:7d&hl=en-US&gl=US&ceid=US:en`;
+    const proxyUrl = `${WORKER_URL}/?url=${encodeURIComponent(searchUrl)}`;
+    
+    const response = await fetch(proxyUrl);
+    if (!response.ok) throw new Error(`Worker error! status: ${response.status}`);
+    
+    // Cloudflare worker returns raw XML text instead of JSON
     const xmlText = await response.text();
     const items = parseFeedXml(xmlText);
     
@@ -20,6 +30,4 @@ export async function findRelatedCoverage(articleTitle: string): Promise<Related
     }));
   } catch (error) {
     console.error("Error finding related coverage:", error);
-    return [];
-  }
-}
+    return
