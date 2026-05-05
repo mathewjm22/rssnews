@@ -62,26 +62,38 @@ function getLink(item: Element): string {
 }
 
 function getImageUrl(item: Element, content: string): string {
+  let url = '';
   const enclosure = getElements(item, 'enclosure')[0];
   const enclosureUrl = enclosure?.getAttribute('url')?.trim();
   const enclosureType = enclosure?.getAttribute('type')?.trim();
+  
   if (enclosureUrl && (!enclosureType || enclosureType.startsWith('image/'))) {
-    return enclosureUrl;
-  }
-
-  const thumbnail = getElements(item, 'media:thumbnail')[0];
-  const thumbnailUrl = thumbnail?.getAttribute('url')?.trim();
-  if (thumbnailUrl) return thumbnailUrl;
-
-  for (const mediaContent of getElements(item, 'media:content')) {
-    const mediaUrl = mediaContent.getAttribute('url')?.trim();
-    const mediaType = mediaContent.getAttribute('type')?.trim();
-    if (mediaUrl && (!mediaType || mediaType.startsWith('image/'))) {
-      return mediaUrl;
+    url = enclosureUrl;
+  } else {
+    const thumbnail = getElements(item, 'media:thumbnail')[0];
+    const thumbnailUrl = thumbnail?.getAttribute('url')?.trim();
+    if (thumbnailUrl) {
+      url = thumbnailUrl;
+    } else {
+      for (const mediaContent of getElements(item, 'media:content')) {
+        const mediaUrl = mediaContent.getAttribute('url')?.trim();
+        const mediaType = mediaContent.getAttribute('type')?.trim();
+        if (mediaUrl && (!mediaType || mediaType.startsWith('image/'))) {
+          url = mediaUrl;
+          break;
+        }
+      }
     }
   }
 
-  return extractImageUrlFromContent(content);
+  if (!url) url = extractImageUrlFromContent(content);
+
+  // FIX FOR CNN: Upgrade insecure HTTP images to HTTPS so the browser doesn't block them
+  if (url && url.startsWith('http://')) {
+    url = url.replace('http://', 'https://');
+  }
+
+  return url;
 }
 
 export function toPlainText(value: string): string {
