@@ -58,7 +58,7 @@ export const DEFAULT_FEEDS: FeedSource[] = [
   { id: 'vice', name: 'VICE', url: 'https://www.vice.com/en/rss', category: 'Major News' },
   { id: 'cbs', name: 'CBS News', url: 'https://www.cbsnews.com/latest/rss/main', category: 'Major News' },
   { id: 'google-news', name: 'Google News', url: 'https://news.google.com/rss?hl=en-US&gl=US&ceid=US:en', category: 'Major News' },
-  { id: 'news4max', name: 'News4Max', url: 'https://news4max.com/feed/', category: 'Major News' },
+  { id: 'news4max', name: 'News4Max', url: 'https://www.newsmax.com/rss/Newsfront/16', category: 'Major News' },
 
   // Local
   { id: 'google-local', name: 'Google Local', url: 'https://news.google.com/rss/topics/CAAqHAgKIhZDQklTQ2pvSWJHOWpZV3hmZGpJb0FBUAE/sections/CAQiTkNCSVNORG9JYkc5allXeGZkakpDRUd4dlkyRnNYM1l5WDNObFkzUnBiMjV5Q2hJSUwyMHZNRFl3ZDNGNkNnb0lMMjB2TURZd2QzRW9BQSowCAAqLAgKIiZDQklTRmpvSWJHOWpZV3hmZGpKNkNnb0lMMjB2TURZd2QzRW9BQVABUAE?hl=en-US&gl=US&ceid=US%3Aen', category: 'Local' },
@@ -85,6 +85,7 @@ export const DEFAULT_FEEDS: FeedSource[] = [
   { id: 'scientific-american', name: 'Scientific American', url: 'https://www.scientificamerican.com/section/generic-rss/', category: 'Science' },
   { id: 'npr-science', name: 'NPR Science', url: 'https://feeds.npr.org/1007/rss.xml', category: 'Science' },
   { id: 'ars-technica', name: 'ARS Technica', url: 'https://arstechnica.com/science/feed/', category: 'Science' },
+  { id: 'news4max-science', name: 'News4Max', url: 'https://www.newsmax.com/rss/SciTech/20', category: 'Science' },
 
   // Technology
   { id: 'google-tech', name: 'Google Technology', url: 'https://news.google.com/rss/topics/CAAqJggKIiBDQkFTRWdvSUwyMHZNRGRqTVhZU0FtVnVHZ0pWVXlnQVAB?hl=en-US&gl=US&ceid=US:en', category: 'Technology' },
@@ -103,6 +104,7 @@ export const DEFAULT_FEEDS: FeedSource[] = [
   { id: 'gizmodo', name: 'Gizmodo', url: 'https://gizmodo.com/rss', category: 'Technology' },
   { id: 'cbs-tech', name: 'CBS Tech', url: 'https://www.cbsnews.com/latest/rss/technology', category: 'Technology' },
   { id: 'science-daily-tech', name: 'Science Daily Tech', url: 'https://www.sciencedaily.com/rss/top/technology.xml', category: 'Technology' },
+  { id: 'news4max-tech', name: 'News4Max', url: 'https://www.newsmax.com/rss/SciTech/20', category: 'Technology' },
 
   // Business
   { id: 'google-business', name: 'Google Business', url: 'https://news.google.com/rss/topics/CAAqJggKIiBDQkFTRWdvSUwyMHZNRGx6TVdZU0FtVnVHZ0pWVXlnQVAB?hl=en-US&gl=US&ceid=US:en', category: 'Business' },
@@ -119,6 +121,7 @@ export const DEFAULT_FEEDS: FeedSource[] = [
   { id: 'dow-jones', name: 'Dow Jones', url: 'https://feeds.a.dj.com/rss/RSSMarketsMain.xml', category: 'Business' },
   { id: 'wsj-business', name: 'WSJ Business', url: 'https://feeds.a.dj.com/rss/WSJcomUSBusiness.xml', category: 'Business' },
   { id: 'cbs-money', name: 'CBS MoneyWatch', url: 'https://www.cbsnews.com/latest/rss/moneywatch', category: 'Business' },
+  { id: 'news4max-business', name: 'News4Max', url: 'https://www.newsmax.com/rss/Headline/76', category: 'Business' },
 
   // Podcasts
   { id: 'this-american-life', name: 'This American Life', url: 'https://www.thisamericanlife.org/podcast/rss.xml', category: 'Podcasts' },
