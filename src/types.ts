@@ -59,6 +59,9 @@ export const DEFAULT_FEEDS: FeedSource[] = [
   { id: 'cbs', name: 'CBS News', url: 'https://www.cbsnews.com/latest/rss/main', category: 'Major News' },
   { id: 'google-news', name: 'Google News', url: 'https://FEEDS.FEEDBURNER.COM/google/7czhm9zzrqq', category: 'Major News' },
   { id: 'news4max', name: 'News4Max', url: 'https://www.newsmax.com/rss/Newsfront/16', category: 'Major News' },
+  { id: 'reddit', name: 'Reddit Top News', url: 'https://feeds.feedburner.com/reddit/x4aqynxeukl', category: 'Major News' },
+
+
 
   // Local
   { id: 'google-local', name: 'Google Local', url: 'https://news.google.com/rss/topics/CAAqHAgKIhZDQklTQ2pvSWJHOWpZV3hmZGpJb0FBUAE/sections/CAQiTkNCSVNORG9JYkc5allXeGZkakpDRUd4dlkyRnNYM1l5WDNObFkzUnBiMjV5Q2hJSUwyMHZNRFl3ZDNGNkNnb0lMMjB2TURZd2QzRW9BQSowCAAqLAgKIiZDQklTRmpvSWJHOWpZV3hmZGpKNkNnb0lMMjB2TURZd2QzRW9BQVABUAE?hl=en-US&gl=US&ceid=US%3Aen', category: 'Local' },
