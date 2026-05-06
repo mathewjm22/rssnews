@@ -1,20 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
-  Newspaper, 
-  Search, 
-  Settings, 
-  ChevronRight, 
-  ChevronLeft,
-  Filter, 
-  Trash2, 
-  X,
-  Share2,
-  ExternalLink,
-  Ghost,
-  LayoutList,
-  LayoutGrid,
-  ArrowLeft
+  Newspaper, Search, Settings, ChevronRight, ChevronLeft, Filter, Trash2, X,
+  Share2, ExternalLink, Ghost, LayoutList, LayoutGrid, ArrowLeft
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { Article, FeedSource, DEFAULT_FEEDS, FEED_CATEGORIES } from './types';
@@ -50,18 +38,18 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [selectedArticle, setSelectedArticle] = useState<Article | null>(null);
   const [relatedArticles, setRelatedArticles] = useState<RelatedArticle[]>([]);
-  const[loadingRelated, setLoadingRelated] = useState(false);
+  const [loadingRelated, setLoadingRelated] = useState(false);
   const[activeTab, setActiveTab] = useState<string>('Major News');
-  const[activeSourceId, setActiveSourceId] = useState<string | null>(null);
+  const [activeSourceId, setActiveSourceId] = useState<string | null>(null);
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set(['Major News']));
-  const[searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
   
   // App Settings State
-  const[excludedKeywords, setExcludedKeywords] = useState<string[]>(() => {
+  const [excludedKeywords, setExcludedKeywords] = useState<string[]>(() => {
     const saved = localStorage.getItem('excluded_keywords');
-    return saved ? JSON.parse(saved) : [];
+    return saved ? JSON.parse(saved) :[];
   });
-  const[readIds, setReadIds] = useState<Set<string>>(() => {
+  const [readIds, setReadIds] = useState<Set<string>>(() => {
     const saved = localStorage.getItem('read_article_ids');
     return new Set(saved ? JSON.parse(saved) :[]);
   });
@@ -73,11 +61,43 @@ export default function App() {
   const[isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const[newKeyword, setNewKeyword] = useState('');
+  const [refreshKey, setRefreshKey] = useState(0);
+  const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
+  const isManualRefresh = React.useRef(false);
 
-  // Keep track of window width to manage responsive behaviors
+  // Handle responsive layout changes
+  useEffect(() => {
+    const handleResize = () => {
+      const mobile = window.innerWidth < 768;
+      setIsMobile(mobile);
+      if (mobile) {
+        setIsSidebarOpen(false);
+      } else {
+        setIsSidebarOpen(true);
+      }
+    };
+    handleResize(); // Initialize
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  },[]);
+
+  // Persist state
+  useEffect(() => {
+    localStorage.setItem('excluded_keywords', JSON.stringify(excludedKeywords));
+  }, [excludedKeywords]);
+
+  useEffect(() => {
+    localStorage.setItem('read_article_ids', JSON.stringify(Array.from(readIds)));
+  },[readIds]);
+
+  useEffect(() => {
+    localStorage.setItem('view_mode', viewMode);
+  }, [viewMode]);
+
   // Load articles
   useEffect(() => {
-    let ignore = false; // 1. Add a flag to track if this specific request is still relevant
+    let ignore = false;
 
     const loadFeeds = async () => {
       setLoading(true);
@@ -92,14 +112,12 @@ export default function App() {
 
       const results = await Promise.all(sourcesToFetch.map(source => fetchRSS(source, isManualRefresh.current)));
       
-      // 2. If the user clicked something else while we were waiting for the network, abort!
-      if (ignore) return; 
+      if (ignore) return;
 
       isManualRefresh.current = false;
       const flattened = results.flat().sort((a, b) => 
         new Date(b.pubDate).getTime() - new Date(a.pubDate).getTime()
       );
-      
       setArticles(flattened);
       setLoading(false);
       setLastUpdated(new Date());
@@ -107,7 +125,6 @@ export default function App() {
     
     loadFeeds();
     
-    // 3. Cleanup function: React calls this if activeTab or activeSourceId changes again
     return () => {
       ignore = true; 
     };
@@ -122,8 +139,6 @@ export default function App() {
     });
     setActiveTab(cat);
     setActiveSourceId(null);
-    
-    // Auto-close menu on mobile
     if (window.innerWidth < 768) {
       setIsSidebarOpen(false);
       setSelectedArticle(null);
@@ -133,8 +148,6 @@ export default function App() {
   const selectSource = (sourceId: string, cat: string) => {
     setActiveSourceId(sourceId);
     setActiveTab(cat);
-    
-    // Auto-close menu on mobile
     if (window.innerWidth < 768) {
       setIsSidebarOpen(false);
       setSelectedArticle(null);
@@ -197,8 +210,6 @@ export default function App() {
       {/* Top Navigation Bar */}
       <header className="h-14 bg-white border-b border-slate-200 flex items-center justify-between px-4 md:px-6 shrink-0 z-40 relative">
         <div className="flex items-center gap-4 md:gap-8">
-          
-          {/* Arrow Controls to Expand/Collapse Left Column */}
           <div className="flex items-center gap-3">
             <button 
               onClick={() => setIsSidebarOpen(!isSidebarOpen)}
@@ -207,13 +218,11 @@ export default function App() {
             >
               {isSidebarOpen ? <ChevronLeft size={24} /> : <ChevronRight size={24} />}
             </button>
-            
             <div className="flex items-center gap-2 cursor-pointer" onClick={() => { setIsSidebarOpen(!isSidebarOpen); setSelectedArticle(null); }}>
               <div className="w-8 h-8 bg-indigo-600 rounded flex items-center justify-center text-white font-bold shrink-0">A</div>
               <span className="font-bold text-lg tracking-tight hidden sm:block uppercase">Aura News</span>
             </div>
           </div>
-          
           
           <div className="relative hidden md:block">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
@@ -263,9 +272,8 @@ export default function App() {
         </div>
       </header>
 
-{/* Main Content Area */}
+      {/* Main Content Area */}
       <main className="flex flex-1 overflow-hidden relative">
-        
         {/* Mobile Sidebar Overlay */}
         <AnimatePresence>
           {isSidebarOpen && isMobile && (
@@ -381,7 +389,6 @@ export default function App() {
           <section className={cn(
             "bg-white border-r border-slate-200 flex-col shrink-0 transition-all duration-300",
             viewMode === 'grid' ? "flex-1 w-full" : "w-full md:w-80 lg:w-96",
-            // HIDE middle column entirely on mobile if an article is open
             (viewMode === 'list' && selectedArticle) ? "hidden md:flex" : "flex"
           )}>
             <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-white shrink-0">
@@ -555,7 +562,6 @@ export default function App() {
         {(viewMode === 'list' || (viewMode === 'grid' && selectedArticle)) && (
           <article className={cn(
             "flex-1 bg-white overflow-hidden flex-col relative",
-            // HIDE right column entirely on mobile if NO article is open
             (viewMode === 'list' && !selectedArticle) ? "hidden md:flex" : "flex"
           )}>
             <AnimatePresence mode="wait">
@@ -581,7 +587,7 @@ export default function App() {
                 >
                   <div className="p-5 md:p-8 lg:p-14 max-w-2xl mx-auto relative w-full">
                     
-                    {/* Absolute Close X Button at top-right */}
+                    {/* Absolute Close X Button */}
                     <div className="absolute top-4 right-4 md:top-8 md:right-8 lg:right-14 z-10">
                       <button 
                         onClick={() => setSelectedArticle(null)}
@@ -592,7 +598,7 @@ export default function App() {
                       </button>
                     </div>
 
-                    {/* The inline BACK / COMPRESS arrow button */}
+                    {/* The inline BACK / COMPRESS button */}
                     <button 
                       onClick={() => setSelectedArticle(null)}
                       className="mb-6 md:mb-8 flex items-center gap-2 text-sm font-bold text-slate-500 hover:text-indigo-600 transition-colors group px-2 py-1.5 -ml-2 rounded-lg hover:bg-indigo-50 w-fit"
@@ -611,7 +617,6 @@ export default function App() {
                         </span>
                       </div>
                       
-                      {/* Responsive headings size and border */}
                       <h1 className="text-2xl md:text-3xl lg:text-5xl font-bold text-slate-900 leading-[1.1] mb-6 md:mb-8 font-serif italic border-l-4 md:border-l-8 border-indigo-600 pl-4 md:pl-6">
                         {selectedArticle.title}
                       </h1>
