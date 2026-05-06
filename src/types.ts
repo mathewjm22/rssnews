@@ -37,6 +37,7 @@ export const FEED_CATEGORIES = [
   'Science',
   'Sports',
   'Technology'
+  'Other'
 ];
 
 export const DEFAULT_FEEDS: FeedSource[] = [
@@ -130,4 +131,7 @@ export const DEFAULT_FEEDS: FeedSource[] = [
   { id: 'this-american-life', name: 'This American Life', url: 'https://www.thisamericanlife.org/podcast/rss.xml', category: 'Podcasts' },
   { id: 'dateline', name: 'Dateline', url: 'https://podcastfeeds.nbcnews.com/dateline-nbc', category: 'Podcasts' },
   { id: 'crimejunkie', name: 'Crimejunkie', url: 'https://feeds.simplecast.com/qm_9xx0g', category: 'Podcasts' },
+
+  // Other
+  { id: 'reddit-popular', name: 'Reddit r/popular', url: 'https://feeds.feedburner.com/reddit/xefstlqyhit', category: 'Other' },
 ];
