@@ -134,4 +134,5 @@ export const DEFAULT_FEEDS: FeedSource[] = [
 
   // Other
   { id: 'reddit-popular', name: 'Reddit r/popular', url: 'https://feeds.feedburner.com/reddit/xefstlqyhit', category: 'Other' },
+  { id: 'reddit-popular2', name: 'Reddit r/popular page 2', url: 'https://feeds.feedburner.com/reddit/llluc4lgc5i', category: 'Other' },
 ];
