@@ -36,7 +36,7 @@ export const FEED_CATEGORIES = [
   'Podcasts',
   'Science',
   'Sports',
-  'Technology'
+  'Technology',
   'Other'
 ];
 
