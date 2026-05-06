@@ -60,7 +60,7 @@ export const DEFAULT_FEEDS: FeedSource[] = [
   { id: 'cbs', name: 'CBS News', url: 'https://www.cbsnews.com/latest/rss/main', category: 'Major News' },
   { id: 'google-news', name: 'Google News', url: 'https://FEEDS.FEEDBURNER.COM/google/7czhm9zzrqq', category: 'Major News' },
   { id: 'news4max', name: 'News4Max', url: 'https://www.newsmax.com/rss/Newsfront/16', category: 'Major News' },
-  { id: 'reddit', name: 'Reddit Top News', url: 'https://feeds.feedburner.com/reddit/x4aqynxeukl', category: 'Major News' },
+  { id: 'reddit', name: 'Reddit Top News', url: 'https://www.rssrssrssrss.com/api/merge?feeds=NoIgFgLhAODOBcB6RB3NA6ATgUwCa4EsJ0BjAewFtFNEA7bFWRLWWEAGnCjiVQx3xFSlaogCqAZQByAUQDqE5plYgAukA', category: 'Major News' },
 
 
 
