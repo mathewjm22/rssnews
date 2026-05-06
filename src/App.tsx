@@ -75,66 +75,43 @@ export default function App() {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
   // Keep track of window width to manage responsive behaviors
-  useEffect(() => {
-    const handleResize = () => {
-      const mobile = window.innerWidth < 768;
-      setIsMobile(mobile);
-      if (mobile) {
-        setIsSidebarOpen(false); // Default to collapsed on small screens
-      } else {
-        setIsSidebarOpen(true); // Default to expanded on desktop
-      }
-    };
-    
-    // Set initial configuration
-    handleResize();
-    
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  },[]);
-  
-  const[newKeyword, setNewKeyword] = useState('');
-  const[refreshKey, setRefreshKey] = useState(0);
-  const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
-  const isManualRefresh = React.useRef(false);
-
-  // Persist state
-  useEffect(() => {
-    localStorage.setItem('excluded_keywords', JSON.stringify(excludedKeywords));
-  }, [excludedKeywords]);
-
-  useEffect(() => {
-    localStorage.setItem('read_article_ids', JSON.stringify(Array.from(readIds)));
-  }, [readIds]);
-
-  useEffect(() => {
-    localStorage.setItem('view_mode', viewMode);
-  }, [viewMode]);
-
   // Load articles
   useEffect(() => {
+    let ignore = false; // 1. Add a flag to track if this specific request is still relevant
+
     const loadFeeds = async () => {
       setLoading(true);
       let sourcesToFetch: FeedSource[] =[];
       
       if (activeSourceId) {
         const source = DEFAULT_FEEDS.find(f => f.id === activeSourceId);
-        if (source) sourcesToFetch =[source];
+        if (source) sourcesToFetch = [source];
       } else {
         sourcesToFetch = DEFAULT_FEEDS.filter(f => f.category === activeTab);
       }
 
       const results = await Promise.all(sourcesToFetch.map(source => fetchRSS(source, isManualRefresh.current)));
+      
+      // 2. If the user clicked something else while we were waiting for the network, abort!
+      if (ignore) return; 
+
       isManualRefresh.current = false;
       const flattened = results.flat().sort((a, b) => 
         new Date(b.pubDate).getTime() - new Date(a.pubDate).getTime()
       );
+      
       setArticles(flattened);
       setLoading(false);
       setLastUpdated(new Date());
     };
+    
     loadFeeds();
-  },[activeTab, activeSourceId, refreshKey]);
+    
+    // 3. Cleanup function: React calls this if activeTab or activeSourceId changes again
+    return () => {
+      ignore = true; 
+    };
+  }, [activeTab, activeSourceId, refreshKey]);
 
   const toggleCategory = (cat: string) => {
     setExpandedCategories(prev => {
