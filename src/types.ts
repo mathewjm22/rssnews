@@ -71,7 +71,7 @@ export const DEFAULT_FEEDS: FeedSource[] = [
 
   // Sports
   { id: 'google-sports', name: 'Google Sports', url: 'https://news.google.com/rss/topics/CAAqJggKIiBDQkFTRWdvSUwyMHZNRFp1ZEdvU0FtVnVHZ0pWVXlnQVAB?hl=en-US&gl=US&ceid=US:en', category: 'Sports' },
-  { id: 'espn', name: 'ESPN', url: 'http://espn.com/espn/rss/news', category: 'Sports' },
+  { id: 'espn', name: 'ESPN', url: 'https://www.espn.com/espn/rss/news', category: 'Sports' },
   { id: 'nfl', name: 'NFL', url: 'https://www.nfl.com/rss/rsslanding?searchString=home', category: 'Sports' },
   { id: 'nba', name: 'NBA', url: 'https://www.nba.com/rss/nba_rss.xml', category: 'Sports' },
   { id: 'yahoo-sports', name: 'Yahoo Sports', url: 'https://news.yahoo.com/rss/sports', category: 'Sports' },
