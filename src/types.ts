@@ -57,7 +57,7 @@ export const DEFAULT_FEEDS: FeedSource[] = [
   { id: 'abc', name: 'ABC News', url: 'https://feeds.abcnews.com/abcnews/topstories', category: 'Major News' },
   { id: 'vice', name: 'VICE', url: 'https://www.vice.com/en/rss', category: 'Major News' },
   { id: 'cbs', name: 'CBS News', url: 'https://www.cbsnews.com/latest/rss/main', category: 'Major News' },
-  { id: 'google-news', name: 'Google News', url: 'https://news.google.com/rss?hl=en-US&gl=US&ceid=US:en', category: 'Major News' },
+  { id: 'google-news', name: 'Google News', url: 'https://FEEDS.FEEDBURNER.COM/google/7czhm9zzrqq', category: 'Major News' },
   { id: 'news4max', name: 'News4Max', url: 'https://www.newsmax.com/rss/Newsfront/16', category: 'Major News' },
 
   // Local
