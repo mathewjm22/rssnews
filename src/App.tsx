@@ -5,6 +5,7 @@ import {
   Search, 
   Settings, 
   ChevronRight, 
+  ChevronLeft,
   Filter, 
   Trash2, 
   X,
@@ -70,7 +71,28 @@ export default function App() {
   });
 
   const[isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const[isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+
+  // Keep track of window width to manage responsive behaviors
+  useEffect(() => {
+    const handleResize = () => {
+      const mobile = window.innerWidth < 768;
+      setIsMobile(mobile);
+      if (mobile) {
+        setIsSidebarOpen(false); // Default to collapsed on small screens
+      } else {
+        setIsSidebarOpen(true); // Default to expanded on desktop
+      }
+    };
+    
+    // Set initial configuration
+    handleResize();
+    
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  },[]);
+  
   const[newKeyword, setNewKeyword] = useState('');
   const[refreshKey, setRefreshKey] = useState(0);
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
@@ -123,11 +145,23 @@ export default function App() {
     });
     setActiveTab(cat);
     setActiveSourceId(null);
+    
+    // Auto-close menu on mobile
+    if (window.innerWidth < 768) {
+      setIsSidebarOpen(false);
+      setSelectedArticle(null);
+    }
   };
 
   const selectSource = (sourceId: string, cat: string) => {
     setActiveSourceId(sourceId);
     setActiveTab(cat);
+    
+    // Auto-close menu on mobile
+    if (window.innerWidth < 768) {
+      setIsSidebarOpen(false);
+      setSelectedArticle(null);
+    }
   };
 
   // Filtering Logic
@@ -184,12 +218,25 @@ export default function App() {
   return (
     <div className="flex flex-col h-screen w-full bg-slate-50 font-sans text-slate-900 overflow-hidden">
       {/* Top Navigation Bar */}
-      <header className="h-14 bg-white border-b border-slate-200 flex items-center justify-between px-6 shrink-0 z-40">
-        <div className="flex items-center gap-8">
-          <div className="flex items-center gap-2 cursor-pointer" onClick={() => setIsSidebarOpen(!isSidebarOpen)}>
-            <div className="w-8 h-8 bg-indigo-600 rounded flex items-center justify-center text-white font-bold">A</div>
-            <span className="font-bold text-lg tracking-tight hidden sm:block uppercase">Aura News</span>
+      <header className="h-14 bg-white border-b border-slate-200 flex items-center justify-between px-4 md:px-6 shrink-0 z-40 relative">
+        <div className="flex items-center gap-4 md:gap-8">
+          
+          {/* Arrow Controls to Expand/Collapse Left Column */}
+          <div className="flex items-center gap-3">
+            <button 
+              onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+              className="p-1.5 md:p-2 text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+              title={isSidebarOpen ? "Collapse Sidebar" : "Expand Sidebar"}
+            >
+              {isSidebarOpen ? <ChevronLeft size={24} /> : <ChevronRight size={24} />}
+            </button>
+            
+            <div className="flex items-center gap-2 cursor-pointer" onClick={() => { setIsSidebarOpen(!isSidebarOpen); setSelectedArticle(null); }}>
+              <div className="w-8 h-8 bg-indigo-600 rounded flex items-center justify-center text-white font-bold shrink-0">A</div>
+              <span className="font-bold text-lg tracking-tight hidden sm:block uppercase">Aura News</span>
+            </div>
           </div>
+          
           
           <div className="relative hidden md:block">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
@@ -239,13 +286,27 @@ export default function App() {
         </div>
       </header>
 
-      {/* Main Content Area */}
-      <main className="flex flex-1 overflow-hidden">
+{/* Main Content Area */}
+      <main className="flex flex-1 overflow-hidden relative">
+        
+        {/* Mobile Sidebar Overlay */}
+        <AnimatePresence>
+          {isSidebarOpen && isMobile && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsSidebarOpen(false)}
+              className="absolute inset-0 bg-slate-900/20 z-30 md:hidden backdrop-blur-sm"
+            />
+          )}
+        </AnimatePresence>
+
         {/* Left Sidebar: Feeds */}
         <motion.aside 
           initial={false}
           animate={{ width: isSidebarOpen ? 240 : 0, opacity: isSidebarOpen ? 1 : 0 }}
-          className="bg-white border-r border-slate-200 flex flex-col shrink-0 overflow-hidden relative"
+          className="bg-white border-r border-slate-200 flex flex-col shrink-0 overflow-hidden absolute md:relative z-40 h-full left-0 top-0 shadow-2xl md:shadow-none"
         >
           <div className="flex-1 overflow-y-auto scrollbar-hide py-6 px-4 space-y-8">
             <div>
@@ -339,11 +400,12 @@ export default function App() {
         </motion.aside>
 
         {/* Middle Column: News Feed */}
-        {/* Render only if we are in List View, OR we are in Grid view and NO article is selected */}
         {(viewMode === 'list' || (viewMode === 'grid' && !selectedArticle)) && (
           <section className={cn(
-            "bg-white border-r border-slate-200 flex flex-col shrink-0 transition-all duration-300",
-            viewMode === 'grid' ? "flex-1 w-full" : "w-full sm:w-80 lg:w-96"
+            "bg-white border-r border-slate-200 flex-col shrink-0 transition-all duration-300",
+            viewMode === 'grid' ? "flex-1 w-full" : "w-full md:w-80 lg:w-96",
+            // HIDE middle column entirely on mobile if an article is open
+            (viewMode === 'list' && selectedArticle) ? "hidden md:flex" : "flex"
           )}>
             <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-white shrink-0">
               <span className="text-sm font-bold tracking-tight truncate mr-2">
@@ -513,9 +575,12 @@ export default function App() {
         )}
 
         {/* Right Column: Article View */}
-        {/* Render if we are in List View, OR if we are in Grid view AND an article IS selected */}
         {(viewMode === 'list' || (viewMode === 'grid' && selectedArticle)) && (
-          <article className="flex-1 bg-white overflow-hidden flex flex-col relative">
+          <article className={cn(
+            "flex-1 bg-white overflow-hidden flex-col relative",
+            // HIDE right column entirely on mobile if NO article is open
+            (viewMode === 'list' && !selectedArticle) ? "hidden md:flex" : "flex"
+          )}>
             <AnimatePresence mode="wait">
               {!selectedArticle ? (
                 <motion.div 
@@ -537,19 +602,30 @@ export default function App() {
                   animate={{ opacity: 1, y: 0 }}
                   className="flex-1 overflow-y-auto scrollbar-hide relative"
                 >
-                  <div className="p-8 lg:p-14 max-w-2xl mx-auto">
+                  <div className="p-5 md:p-8 lg:p-14 max-w-2xl mx-auto relative w-full">
                     
-                    {/* The beautiful inline BACK / CLOSE button */}
+                    {/* Absolute Close X Button at top-right */}
+                    <div className="absolute top-4 right-4 md:top-8 md:right-8 lg:right-14 z-10">
+                      <button 
+                        onClick={() => setSelectedArticle(null)}
+                        className="p-2 bg-white/80 hover:bg-slate-100 text-slate-500 hover:text-slate-900 rounded-full transition-all backdrop-blur-sm border border-slate-100 shadow-sm"
+                        title="Close Article"
+                      >
+                        <X size={20} />
+                      </button>
+                    </div>
+
+                    {/* The inline BACK / COMPRESS arrow button */}
                     <button 
                       onClick={() => setSelectedArticle(null)}
-                      className="mb-8 flex items-center gap-2 text-sm font-bold text-slate-500 hover:text-indigo-600 transition-colors group"
+                      className="mb-6 md:mb-8 flex items-center gap-2 text-sm font-bold text-slate-500 hover:text-indigo-600 transition-colors group px-2 py-1.5 -ml-2 rounded-lg hover:bg-indigo-50 w-fit"
                     >
                       <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" /> 
-                      {viewMode === 'grid' ? 'Back to Grid' : 'Close Article'}
+                      {viewMode === 'grid' ? 'Back to Grid' : 'Back to Articles'}
                     </button>
 
-                    <div className="mb-10">
-                      <div className="flex items-center gap-4 mb-6">
+                    <div className="mb-8 md:mb-10">
+                      <div className="flex items-center gap-4 mb-5 md:mb-6">
                         <span className="bg-indigo-600 text-white text-[10px] px-2.5 py-1 rounded font-bold uppercase tracking-widest shadow-sm">
                           {selectedArticle.feedSourceName}
                         </span>
@@ -558,7 +634,8 @@ export default function App() {
                         </span>
                       </div>
                       
-                      <h1 className="text-3xl lg:text-5xl font-bold text-slate-900 leading-[1.1] mb-8 font-serif italic border-l-8 border-indigo-600 pl-6">
+                      {/* Responsive headings size and border */}
+                      <h1 className="text-2xl md:text-3xl lg:text-5xl font-bold text-slate-900 leading-[1.1] mb-6 md:mb-8 font-serif italic border-l-4 md:border-l-8 border-indigo-600 pl-4 md:pl-6">
                         {selectedArticle.title}
                       </h1>
 
