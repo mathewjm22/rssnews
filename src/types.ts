@@ -43,7 +43,7 @@ export const DEFAULT_FEEDS: FeedSource[] = [
   // Major News
   { id: 'bbc', name: 'BBC News', url: 'https://feeds.bbci.co.uk/news/rss.xml', category: 'Major News' },
   { id: 'cnn', name: 'CNN', url: 'http://rss.cnn.com/rss/cnn_topstories.rss', category: 'Major News' },
-  { id: 'reuters', name: 'Reuters', url: 'https://news.google.com/rss/search?q=when:24h+source:Reuters&hl=en-US&gl=US&ceid=US:en', category: 'Major News' },
+  { id: 'reuters', name: 'Reuters', url: 'https://feeds.feedburner.com/google/xnpgaliinyz', category: 'Major News' },
   { id: 'ap', name: 'Associated Press', url: 'https://news.google.com/rss/search?q=when:24h+source:Associated_Press', category: 'Major News' },
   { id: 'nyt', name: 'NY Times', url: 'https://rss.nytimes.com/services/xml/rss/nyt/HomePage.xml', category: 'Major News' },
   { id: 'wapo', name: 'Washington Post', url: 'http://feeds.washingtonpost.com/rss/national', category: 'Major News' },
