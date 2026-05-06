@@ -79,7 +79,7 @@ export const DEFAULT_FEEDS: FeedSource[] = [
   { id: 'fox-sports', name: 'FOX Sports', url: 'https://api.foxsports.com/v1/rss?partnerKey=zBaFxRyGKCfxBagJG9b8pqLyndmvo7UU', category: 'Sports' },
 
   // Science
-  { id: 'google-science', name: 'Google Science', url: 'https://news.google.com/rss/topics/CAAqJggKIiBDQkFTRWdvSUwyMHZNRFp0Y1RjU0FtVnVHZ0pWVXlnQVAB?hl=en-US&gl=US&ceid=US:en', category: 'Science' },
+  { id: 'google-science', name: 'Google Science', url: 'https://FEEDS.FEEDBURNER.COM/google/xexchaad6lf', category: 'Science' },
   { id: 'yahoo-science', name: 'Yahoo Science', url: 'https://news.yahoo.com/rss/science', category: 'Science' },
   { id: 'science-daily', name: 'Science Daily', url: 'https://www.sciencedaily.com/rss/top/science.xml', category: 'Science' },
   { id: 'scientific-american', name: 'Scientific American', url: 'https://www.scientificamerican.com/section/generic-rss/', category: 'Science' },
